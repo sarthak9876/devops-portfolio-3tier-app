@@ -37,17 +37,19 @@ A production-grade, fully automated 3-tier web application deployed on AWS using
 - **Application:** React + Node.js/Python + MongoDB/PostgreSQL
 
 ## 💰 Cost Breakdown
+```
+| Component        | Instance Type  | Monthly Cost | Status              |
+|------------------|----------------|--------------|---------------------|
+| K8s Master       | m7i-flex.large | $0 (credits) | ✅ Free Tier        |
+| K8s Workers (2x) | m7i-flex.large | $0 (credits) | ✅ Free Tier        |
+| Bastion Host     | t3.micro       | $0 (credits) | ✅ Free Tier        |
+| Monitoring       | t3.small       | $0 (credits) | ✅ Free Tier        |
+| **Total**        |                | **~$0**      | **6-month credits** |
+```
 
-| Component | Instance Type | Monthly Cost | Status |
-|-----------|--------------|--------------|--------|
-| K8s Master | m7i-flex.large | $0 (credits) | ✅ Free Tier |
-| K8s Workers (2x) | m7i-flex.large | $0 (credits) | ✅ Free Tier |
-| Bastion Host | t3.micro | $0 (credits) | ✅ Free Tier |
-| Monitoring | t3.small | $0 (credits) | ✅ Free Tier |
-| **Total** | | **~$0** | **6-month credits** |
 
 ## 📁 Repository Structure
-
+```
 devops-portfolio-3tier-app/
 ├── terraform/ # Infrastructure as Code
 │ ├── modules/ # Reusable Terraform modules
@@ -87,7 +89,7 @@ devops-portfolio-3tier-app/
 └── docs/ # Documentation
 ├── architecture/
 └── runbooks/
-
+```
 
 ## 🚦 Quick Start
 
