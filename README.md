@@ -181,7 +181,7 @@ This is a portfolio project, but feedback and suggestions are welcome! Open an i
 **Sarthak Vaish**  
 DevOps Engineer | Transitioning from Operations Support  
 📧sarthakvaish31@gmail.com  
-🔗 [LinkedIn]https://linkedin.com/in/sarthakvaish007)  
+🔗 [LinkedIn](https://linkedin.com/in/sarthakvaish007)  
 🐙 [GitHub](https://github.comsarthak9876)
 
 ## 📜 License
