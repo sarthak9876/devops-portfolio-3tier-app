@@ -1,0 +1,205 @@
+##################################################
+# Docker Compose - TaskMaster 3-Tier Application
+# Production-grade configuration with dynamic API URL handling
+##################################################
+
+version: '3.8'
+
+##################################################
+# SERVICES (Containers)
+##################################################
+
+services:
+
+  ##################################################
+  # DATABASE TIER - MongoDB
+  ##################################################
+  mongodb:
+    image: mongo:7
+    
+    container_name: taskmaster-mongodb
+    
+    restart: unless-stopped
+    
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-secure_password_change_me}
+      MONGO_INITDB_DATABASE: taskmaster
+    
+    ports:
+      - "27017:27017"
+    
+    volumes:
+      - mongodb-data:/data/db
+      - ./application/database/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    
+    networks:
+      - taskmaster-network
+    
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  ##################################################
+  # BACKEND TIER - Node.js + Express API
+  ##################################################
+  backend:
+    build:
+      context: ./application/backend
+      dockerfile: Dockerfile.optimized
+      args:
+        - NODE_ENV=development
+      target: production
+    
+    image: taskmaster-backend:latest
+    
+    container_name: taskmaster-backend
+    
+    restart: unless-stopped
+    
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 5000
+      MONGODB_URI: mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-secure_password_change_me}@mongodb:27017/taskmaster?authSource=admin
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+    
+    ports:
+      - "5000:5000"
+    
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    
+    networks:
+      - taskmaster-network
+    
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    
+    volumes:
+      - backend-logs:/app/logs
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  ##################################################
+  # FRONTEND TIER - React + Vite + NGINX
+  # With runtime API URL injection
+  ##################################################
+  frontend:
+    build:
+      context: ./application/frontend
+      dockerfile: Dockerfile.optimized
+      
+      args:
+        # Placeholder for build - will be replaced at runtime
+        - VITE_API_URL=__RUNTIME_REPLACE__
+        - VITE_APP_TITLE=TaskMaster - DevOps Portfolio
+      
+      target: production
+    
+    image: taskmaster-frontend:latest
+    
+    container_name: taskmaster-frontend
+    
+    restart: unless-stopped
+    
+    environment:
+      # Runtime environment variables (injected by docker-entrypoint.sh)
+      # For local Docker Compose, use localhost
+      # For EC2, this will be auto-detected by browser location
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:5000}
+      - VITE_APP_TITLE=TaskMaster - DevOps Portfolio
+      - NODE_ENV=${NODE_ENV:-production}
+    
+    ports:
+      - "3000:80"
+    
+    depends_on:
+      backend:
+        condition: service_healthy
+    
+    networks:
+      - taskmaster-network
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/nginx-health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+##################################################
+# NETWORKS
+##################################################
+networks:
+  taskmaster-network:
+    driver: bridge
+    name: taskmaster-network
+
+##################################################
+# VOLUMES (Data Persistence)
+##################################################
+volumes:
+  mongodb-data:
+    driver: local
+    name: taskmaster-mongodb-data
+  
+  backend-logs:
+    driver: local
+    name: taskmaster-backend-logs
+
+##################################################
+# USAGE INSTRUCTIONS
+##################################################
+
+# LOCAL DEVELOPMENT (Docker Compose on laptop):
+# 1. Ensure .env file exists with VITE_API_URL=http://localhost:5000
+# 2. docker compose build
+# 3. docker compose up -d
+# 4. Open http://localhost:3000
+# 5. Frontend auto-detects localhost:5000 for API calls
+
+# EC2 DEPLOYMENT:
+# 1. No need to set VITE_API_URL in .env
+# 2. Frontend auto-detects EC2 IP from browser location
+# 3. Works even after EC2 instance restarts (no Elastic IP needed)
+# 4. docker compose build
+# 5. docker compose up -d
+# 6. Open http://<EC2_PUBLIC_IP>:3000
+# 7. Frontend automatically calls http://<EC2_PUBLIC_IP>:5000
+
+# MANUAL OVERRIDE (if needed):
+# export VITE_API_URL=http://custom-domain.com:5000
+# docker compose up -d
+
+# TROUBLESHOOTING:
+# - Check logs: docker compose logs -f
+# - Check health: docker compose ps
+# - Test backend: curl http://localhost:5000/health
+# - Test frontend: curl http://localhost:3000/nginx-health
+# - Check runtime config: Open browser console at http://localhost:3000
+#   Should see: "🚀 TaskService initialized with: { API_URL: ... }"
+
