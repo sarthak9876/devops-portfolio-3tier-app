@@ -46,3 +46,10 @@ Thumbs.db
 # Backup files
 *.backup
 *.bak
+
+# Environment files (contain secrets)
+.env
+.env.local
+.env.development
+.env.staging
+.env.production
