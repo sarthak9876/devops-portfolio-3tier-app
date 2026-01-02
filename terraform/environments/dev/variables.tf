@@ -1,7 +1,7 @@
 variable "aws_region" {
   description = "AWS region"
   type        = string
-  default     = "ap-south-1"
+  default     = "us-east-1"
 }
 
 variable "project_name" {
@@ -42,13 +42,13 @@ variable "private_subnet_cidr" {
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
-  default     = "t3.micro"
+  default     = "m7i-flex.large"
 }
 
 variable "root_volume_size" {
   description = "Root volume size in GB"
   type        = number
-  default     = 20
+  default     = 30
 }
 
 variable "ssh_allowed_cidrs" {

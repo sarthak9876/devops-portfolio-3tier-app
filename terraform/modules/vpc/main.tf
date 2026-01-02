@@ -30,7 +30,7 @@ resource "aws_internet_gateway" "igw" {
 resource "aws_subnet" "public" {
   vpc_id = aws_vpc.devops-project.id
   cidr_block = var.public_subnet_cidr
-  availability_zone = "${var.aws_region}"
+  availability_zone = "${var.aws_region}a"
   map_public_ip_on_launch = true
  
   tags = merge(
@@ -46,7 +46,7 @@ resource "aws_subnet" "public" {
 resource "aws_subnet" "private" {
   vpc_id = aws_vpc.devops-project.id
   cidr_block = var.private_subnet_cidr
-  availability_zone = "${var.aws_region}"
+  availability_zone = "${var.aws_region}a"
 
   tags = merge(
     var.common_tags,
