@@ -1,31 +1,31 @@
 variable "project_name" {
   description = "Project name for resource naming"
-  type = string
+  type        = string
 }
 
 variable "environment" {
   description = "Environment (dev/staging/procution)"
-  type = string
+  type        = string
 }
 
 variable "aws_region" {
   description = "AWS Region"
-  type = string
+  type        = string
 }
 
 variable "vpc_cidr" {
   description = "CIDR block for VPC"
-  type = string
+  type        = string
 }
 
 variable "public_subnet_cidr" {
   description = "CIDR block for public subnet"
-  type = string
+  type        = string
 }
 
 variable "private_subnet_cidr" {
   description = "CIDR block for private subnet"
-  type = string
+  type        = string
 }
 
 variable "common_tags" {

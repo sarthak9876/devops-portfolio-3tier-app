@@ -4,8 +4,8 @@
 # ═══════════════════════════════════════════════════════
 
 resource "aws_vpc" "devops-project" {
-  cidr_block = var.vpc_cidr
-  enable_dns_support = true
+  cidr_block           = var.vpc_cidr
+  enable_dns_support   = true
   enable_dns_hostnames = true
 
   tags = merge(
@@ -28,11 +28,11 @@ resource "aws_internet_gateway" "igw" {
 }
 
 resource "aws_subnet" "public" {
-  vpc_id = aws_vpc.devops-project.id
-  cidr_block = var.public_subnet_cidr
-  availability_zone = "${var.aws_region}a"
+  vpc_id                  = aws_vpc.devops-project.id
+  cidr_block              = var.public_subnet_cidr
+  availability_zone       = "${var.aws_region}a"
   map_public_ip_on_launch = true
- 
+
   tags = merge(
     var.common_tags,
     {
@@ -44,8 +44,8 @@ resource "aws_subnet" "public" {
 
 
 resource "aws_subnet" "private" {
-  vpc_id = aws_vpc.devops-project.id
-  cidr_block = var.private_subnet_cidr
+  vpc_id            = aws_vpc.devops-project.id
+  cidr_block        = var.private_subnet_cidr
   availability_zone = "${var.aws_region}a"
 
   tags = merge(
@@ -58,7 +58,7 @@ resource "aws_subnet" "private" {
 }
 
 
-resource "aws_route_table" "public" { 
+resource "aws_route_table" "public" {
 
   vpc_id = aws_vpc.devops-project.id
   route {
@@ -74,7 +74,7 @@ resource "aws_route_table" "public" {
 }
 
 resource "aws_route_table_association" "public" {
-  subnet_id = aws_subnet.public.id
+  subnet_id      = aws_subnet.public.id
   route_table_id = aws_route_table.public.id
 }
 
@@ -89,9 +89,9 @@ resource "aws_route_table" "private" {
 }
 
 resource "aws_route_table_association" "private" {
-  subnet_id = aws_subnet.private.id
+  subnet_id      = aws_subnet.private.id
   route_table_id = aws_route_table.private.id
 }
-   
+
 
 

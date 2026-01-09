@@ -1,21 +1,21 @@
 variable "project_name" {
   description = "Project name"
-  type = string
+  type        = string
 }
 
 variable "environment" {
   description = "Environment"
-  type = string
+  type        = string
 }
 
 variable "vpc_id" {
   description = "VPC ID"
-  type = string
+  type        = string
 }
 
 variable "ssh_allowed_cidrs" {
   description = "SSH allowed cidr"
-  type = list(string)
+  type        = list(string)
 }
 
 
