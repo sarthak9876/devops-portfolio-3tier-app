@@ -158,3 +158,6 @@ api_keys.json
 tokens.json
 kubernetes/manifests/02-secret.yaml
 .env.k8s
+terraform/modules/compute/user_data.sh.bkp
+kubernetes/set-mongo-env.sh
+kubernetes/manifests/05-frontend-deployment.yml.bkp
