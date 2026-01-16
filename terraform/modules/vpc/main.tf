@@ -3,6 +3,16 @@
 # Creates VPC, subnets, IGW, route tables
 # ═══════════════════════════════════════════════════════
 
+# Data: AZs if not explicitly passed
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
+locals {
+  azs = slice(data.aws_availability_zones.available.names, 0, 2)
+}
+
+
 resource "aws_vpc" "devops-project" {
   cidr_block           = var.vpc_cidr
   enable_dns_support   = true
@@ -28,9 +38,19 @@ resource "aws_internet_gateway" "igw" {
 }
 
 resource "aws_subnet" "public" {
-  vpc_id                  = aws_vpc.devops-project.id
-  cidr_block              = var.public_subnet_cidr
-  availability_zone       = "${var.aws_region}a"
+
+  for_each = {
+    for idx, az in local.azs :
+    az => {
+      az   = az
+      cidr = var.public_subnet_cidrs[idx]
+    }
+  }
+
+  vpc_id            = aws_vpc.devops-project.id
+  cidr_block        = each.value.cidr
+  availability_zone = each.value.az
+
   map_public_ip_on_launch = true
 
   tags = merge(
@@ -44,9 +64,18 @@ resource "aws_subnet" "public" {
 
 
 resource "aws_subnet" "private" {
+
+  for_each = {
+    for idx, az in local.azs :
+    az => {
+      az   = az
+      cidr = var.private_subnet_cidrs[idx]
+    }
+  }
+
   vpc_id            = aws_vpc.devops-project.id
-  cidr_block        = var.private_subnet_cidr
-  availability_zone = "${var.aws_region}a"
+  cidr_block        = each.value.cidr
+  availability_zone = each.value.az
 
   tags = merge(
     var.common_tags,
@@ -74,7 +103,8 @@ resource "aws_route_table" "public" {
 }
 
 resource "aws_route_table_association" "public" {
-  subnet_id      = aws_subnet.public.id
+  for_each       = aws_subnet.public
+  subnet_id      = each.value.id
   route_table_id = aws_route_table.public.id
 }
 
@@ -89,9 +119,7 @@ resource "aws_route_table" "private" {
 }
 
 resource "aws_route_table_association" "private" {
-  subnet_id      = aws_subnet.private.id
+  for_each       = aws_subnet.private
+  subnet_id      = each.value.id
   route_table_id = aws_route_table.private.id
 }
-
-
-

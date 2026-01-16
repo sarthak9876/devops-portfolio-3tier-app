@@ -1,0 +1,16 @@
+# ═══════════════════════════════════════════════════════
+# Namespace: taskmaster-dev
+# Purpose: Logical isolation for dev environment
+# ═══════════════════════════════════════════════════════
+
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: taskmaster-dev
+  labels:
+    name: taskmaster-dev
+    environment: development
+    project: taskmaster
+    managed-by: kubectl
+

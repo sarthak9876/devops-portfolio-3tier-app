@@ -28,3 +28,19 @@ output "backend_url" {
   value       = module.compute.backend_url
 }
 
+# EKS related output
+output "eks_cluster_name" {
+  description = "Name of the EKS cluster"
+  value       = module.eks.cluster_name
+}
+
+output "eks_cluster_endpoint" {
+  description = "API server endpoint"
+  value       = module.eks.cluster_endpoint
+}
+
+output "eks_cluster_ca_certificate" {
+  description = "CA certificate (base64)"
+  value       = module.eks.cluster_ca_certificate
+}
+

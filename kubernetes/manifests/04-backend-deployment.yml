@@ -1,0 +1,134 @@
+# ═══════════════════════════════════════════════════════
+# Backend Deployment (Node.js API)
+# Stateless application with multiple replicas
+# ═══════════════════════════════════════════════════════
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: taskmaster-dev
+  labels:
+    app: backend
+    tier: api
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1 #create 1 extra pod when update
+      maxUnavailable: 0 # nerver have less than desired replicas
+  selector:
+    matchLabels:
+      app: backend
+
+  template:
+    metadata:
+      labels:
+        app: backend
+        tier: api
+
+    spec:
+      containers:
+      - name: backend
+        # ⚠️  UPDATE THIS WITH YOUR ECR IMAGE URI
+        image: ${ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com/taskmaster-backend:latest
+        imagePullPolicy: Always
+
+
+        ports:
+        - containerPort: 5000
+          name: http
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: taskmaster-config
+              key: NODE_ENV
+
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+               name: taskmaster-config
+               key: API_PORT
+        - name: CORS_ORIGIN
+          valueFrom:
+            configMapKeyRef:
+              name: taskmaster-config
+              key: CORS_ORIGIN
+
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: taskmaster-config
+              key: LOG_LEVEL
+
+        - name: MONGO_URI
+          valueFrom:
+            secretKeyRef:
+              name: taskmaster-secrets
+              key: MONGO_URI
+
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 30  # 30 * 5s = 150s max startup time
+
+---
+
+# ═══════════════════════════════════════════════════════
+# Backend Service
+# ClusterIP: Internal access from frontend pods only
+# ═══════════════════════════════════════════════════════
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: taskmaster-dev
+  labels:
+    app: backend
+    tier: api
+spec:
+  type: ClusterIP
+  selector:
+    app: backend
+  ports:
+  - port: 5000
+    targetPort: 5000
+    protocol: TCP
+    name: http
+  sessionAffinity: None

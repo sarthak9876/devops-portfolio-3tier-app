@@ -156,3 +156,5 @@ ssh_config
 # API keys and tokens
 api_keys.json
 tokens.json
+kubernetes/manifests/02-secret.yaml
+.env.k8s

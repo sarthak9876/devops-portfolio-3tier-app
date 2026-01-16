@@ -150,7 +150,7 @@ app.delete('/api/v1/tasks/:id', async (req, res) => {
 
 // Database connection with retry logic (important for container startup!)
 const connectDB = async (retries = 5) => {
-  const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/taskmaster';
+  const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/taskmaster';
   
   for (let i = 0; i < retries; i++) {
     try {

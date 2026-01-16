@@ -1,0 +1,127 @@
+# ═══════════════════════════════════════════════════════
+# MongoDB Deployment
+# Single replica for dev environment
+# 
+# Production considerations:
+# - Use StatefulSet with 3 replicas
+# - Use PersistentVolumeClaim with gp3 EBS
+# - Enable authentication and TLS
+# - Use MongoDB Operator for better management
+# ═══════════════════════════════════════════════════════
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+  namepsace: taskmaster-dev
+  labels:
+    app: mongodb
+    tier: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+        tier: database
+   spec:
+      containers:
+      - name: mongodb
+        image: mongo:7.0
+        ports:
+        - containerPort: 27017
+          name: mongodb
+          protocol: TCP
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: taskmaster-secrets
+              key: MONGO_ROOT_USER
+
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: taskmaster-secrets
+              key: MONGO_ROOT_PASSWORD
+    
+        - name: MONGO_INITDB_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: taskmaster-config
+              key: MONGO_DATABASE
+
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
+
+
+       livenessProbe:
+         exec:
+           command:
+           - mongosh
+           - --eval
+           - "db.adminCommand('ping')"
+
+         intialDelaySeconds: 30
+         periodSeconds: 10
+         timeoutSeconds: 5
+         failureThreshold: 3
+
+       readinessProbe:
+         exec:
+           command:
+           - mongosh
+           - --eval
+           - "db.adminCommand('ping')"
+         initialDelaySeconds: 10
+         periodSeconds: 5
+         timeoutSeconds: 3
+         failureThreshold: 3
+
+       volumeMount:
+       - name: mongodb-data
+         mountPath: /data/db
+
+    volumes:
+    - name: mongodb-data
+      emptydir: {}
+      # In production, use PersistentVolumeClaim:
+      # persistentVolumeClaim:
+      #   claimName: mongodb-pvc
+
+---
+
+# ═══════════════════════════════════════════════════════
+# MongoDB Service
+# ClusterIP: Internal access only
+# ═══════════════════════════════════════════════════════
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-service
+  namespace: taskmaster-dev
+  labels:
+    app: mongodb
+    tier: database
+
+spec:
+  type: ClusterIP
+  selector:
+    app: mongodb
+  ports:
+  - port: 27017
+    protocol: TCP
+    name: mongodb
+    targerPort: 27017
+
