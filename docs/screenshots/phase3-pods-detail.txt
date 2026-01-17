@@ -1,0 +1,369 @@
+Name:             backend-5dccbbbf74-d5bhd
+Namespace:        taskmaster-dev
+Priority:         0
+Service Account:  default
+Node:             ip-10-0-1-67.ec2.internal/10.0.1.67
+Start Time:       Sat, 17 Jan 2026 07:59:16 +0000
+Labels:           app=backend
+                  pod-template-hash=5dccbbbf74
+                  tier=api
+Annotations:      kubectl.kubernetes.io/restartedAt: 2026-01-17T07:59:05Z
+Status:           Running
+IP:               10.0.1.51
+IPs:
+  IP:           10.0.1.51
+Controlled By:  ReplicaSet/backend-5dccbbbf74
+Containers:
+  backend:
+    Container ID:   containerd://764cab69379d2305ce608d1fe89d2a3ea6487c86af992dd1c4fd864f3ad6daa3
+    Image:          364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-backend:latest
+    Image ID:       364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-backend@sha256:889e4669c9c39ded6ada7e54881c60a87f3f28f3263c2ca6a893c623bde52701
+    Port:           5000/TCP (http)
+    Host Port:      0/TCP (http)
+    State:          Running
+      Started:      Sat, 17 Jan 2026 07:59:16 +0000
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:     200m
+      memory:  256Mi
+    Requests:
+      cpu:      100m
+      memory:   128Mi
+    Liveness:   http-get http://:5000/health delay=30s timeout=5s period=10s #success=1 #failure=3
+    Readiness:  http-get http://:5000/health delay=10s timeout=3s period=5s #success=1 #failure=3
+    Startup:    http-get http://:5000/health delay=0s timeout=3s period=5s #success=1 #failure=30
+    Environment:
+      NODE_ENV:     <set to the key 'NODE_ENV' of config map 'taskmaster-config'>     Optional: false
+      PORT:         <set to the key 'API_PORT' of config map 'taskmaster-config'>     Optional: false
+      CORS_ORIGIN:  <set to the key 'CORS_ORIGIN' of config map 'taskmaster-config'>  Optional: false
+      LOG_LEVEL:    <set to the key 'LOG_LEVEL' of config map 'taskmaster-config'>    Optional: false
+      MONGO_URI:    <set to the key 'MONGO_URI' in secret 'taskmaster-secrets'>       Optional: false
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-7h4bb (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-7h4bb:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:                      <none>
+
+
+Name:             backend-5dccbbbf74-xffbf
+Namespace:        taskmaster-dev
+Priority:         0
+Service Account:  default
+Node:             ip-10-0-1-67.ec2.internal/10.0.1.67
+Start Time:       Sat, 17 Jan 2026 07:59:05 +0000
+Labels:           app=backend
+                  pod-template-hash=5dccbbbf74
+                  tier=api
+Annotations:      kubectl.kubernetes.io/restartedAt: 2026-01-17T07:59:05Z
+Status:           Running
+IP:               10.0.1.54
+IPs:
+  IP:           10.0.1.54
+Controlled By:  ReplicaSet/backend-5dccbbbf74
+Containers:
+  backend:
+    Container ID:   containerd://8b9084f8a8f66b83c3376cabe77bbb4817458881edd1e4e20b0f58b2f2c8ff8e
+    Image:          364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-backend:latest
+    Image ID:       364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-backend@sha256:889e4669c9c39ded6ada7e54881c60a87f3f28f3263c2ca6a893c623bde52701
+    Port:           5000/TCP (http)
+    Host Port:      0/TCP (http)
+    State:          Running
+      Started:      Sat, 17 Jan 2026 07:59:06 +0000
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:     200m
+      memory:  256Mi
+    Requests:
+      cpu:      100m
+      memory:   128Mi
+    Liveness:   http-get http://:5000/health delay=30s timeout=5s period=10s #success=1 #failure=3
+    Readiness:  http-get http://:5000/health delay=10s timeout=3s period=5s #success=1 #failure=3
+    Startup:    http-get http://:5000/health delay=0s timeout=3s period=5s #success=1 #failure=30
+    Environment:
+      NODE_ENV:     <set to the key 'NODE_ENV' of config map 'taskmaster-config'>     Optional: false
+      PORT:         <set to the key 'API_PORT' of config map 'taskmaster-config'>     Optional: false
+      CORS_ORIGIN:  <set to the key 'CORS_ORIGIN' of config map 'taskmaster-config'>  Optional: false
+      LOG_LEVEL:    <set to the key 'LOG_LEVEL' of config map 'taskmaster-config'>    Optional: false
+      MONGO_URI:    <set to the key 'MONGO_URI' in secret 'taskmaster-secrets'>       Optional: false
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-kb4cq (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-kb4cq:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:                      <none>
+
+
+Name:             frontend-7fb6676b7c-2vb46
+Namespace:        taskmaster-dev
+Priority:         0
+Service Account:  default
+Node:             ip-10-0-1-67.ec2.internal/10.0.1.67
+Start Time:       Sat, 17 Jan 2026 07:34:49 +0000
+Labels:           app=frontend
+                  pod-template-hash=7fb6676b7c
+                  tier=presentation
+Annotations:      kubectl.kubernetes.io/restartedAt: 2026-01-17T07:34:38Z
+Status:           Running
+IP:               10.0.1.210
+IPs:
+  IP:           10.0.1.210
+Controlled By:  ReplicaSet/frontend-7fb6676b7c
+Containers:
+  frontend:
+    Container ID:   containerd://02d49bde439f82d39a4dd05f52c5181d3913660dd4f2e4c0efc6969a59f5dbd2
+    Image:          364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-frontend:latest
+    Image ID:       364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-frontend@sha256:1def8f99dacd8a078f03f59a1b0dd3e1be2a597d63caab62d8ab9cccb7936a62
+    Port:           80/TCP (http)
+    Host Port:      0/TCP (http)
+    State:          Running
+      Started:      Sat, 17 Jan 2026 07:34:50 +0000
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:     100m
+      memory:  128Mi
+    Requests:
+      cpu:      50m
+      memory:   64Mi
+    Liveness:   http-get http://:80/ delay=30s timeout=5s period=10s #success=1 #failure=3
+    Readiness:  http-get http://:80/ delay=5s timeout=3s period=5s #success=1 #failure=3
+    Environment:
+      VITE_API_URL:  backend-service.taskmaster-dev.svc.cluster.local:5000
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-t6wrh (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-t6wrh:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:                      <none>
+
+
+Name:             frontend-7fb6676b7c-mqgnh
+Namespace:        taskmaster-dev
+Priority:         0
+Service Account:  default
+Node:             ip-10-0-1-67.ec2.internal/10.0.1.67
+Start Time:       Sat, 17 Jan 2026 07:34:59 +0000
+Labels:           app=frontend
+                  pod-template-hash=7fb6676b7c
+                  tier=presentation
+Annotations:      kubectl.kubernetes.io/restartedAt: 2026-01-17T07:34:38Z
+Status:           Running
+IP:               10.0.1.159
+IPs:
+  IP:           10.0.1.159
+Controlled By:  ReplicaSet/frontend-7fb6676b7c
+Containers:
+  frontend:
+    Container ID:   containerd://0ff83540413bbae66527bc78faf68a2cda0ea8bf62f663634911ca2f278e962e
+    Image:          364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-frontend:latest
+    Image ID:       364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-frontend@sha256:1def8f99dacd8a078f03f59a1b0dd3e1be2a597d63caab62d8ab9cccb7936a62
+    Port:           80/TCP (http)
+    Host Port:      0/TCP (http)
+    State:          Running
+      Started:      Sat, 17 Jan 2026 07:35:00 +0000
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:     100m
+      memory:  128Mi
+    Requests:
+      cpu:      50m
+      memory:   64Mi
+    Liveness:   http-get http://:80/ delay=30s timeout=5s period=10s #success=1 #failure=3
+    Readiness:  http-get http://:80/ delay=5s timeout=3s period=5s #success=1 #failure=3
+    Environment:
+      VITE_API_URL:  backend-service.taskmaster-dev.svc.cluster.local:5000
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-mr9tq (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-mr9tq:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:                      <none>
+
+
+Name:             frontend-7fb6676b7c-xfnrv
+Namespace:        taskmaster-dev
+Priority:         0
+Service Account:  default
+Node:             ip-10-0-1-67.ec2.internal/10.0.1.67
+Start Time:       Sat, 17 Jan 2026 07:34:38 +0000
+Labels:           app=frontend
+                  pod-template-hash=7fb6676b7c
+                  tier=presentation
+Annotations:      kubectl.kubernetes.io/restartedAt: 2026-01-17T07:34:38Z
+Status:           Running
+IP:               10.0.1.220
+IPs:
+  IP:           10.0.1.220
+Controlled By:  ReplicaSet/frontend-7fb6676b7c
+Containers:
+  frontend:
+    Container ID:   containerd://15911d33fcc557aa4a083a32ac30404583c990d6206a64fae75244623b2a7ce8
+    Image:          364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-frontend:latest
+    Image ID:       364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-frontend@sha256:1def8f99dacd8a078f03f59a1b0dd3e1be2a597d63caab62d8ab9cccb7936a62
+    Port:           80/TCP (http)
+    Host Port:      0/TCP (http)
+    State:          Running
+      Started:      Sat, 17 Jan 2026 07:34:40 +0000
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:     100m
+      memory:  128Mi
+    Requests:
+      cpu:      50m
+      memory:   64Mi
+    Liveness:   http-get http://:80/ delay=30s timeout=5s period=10s #success=1 #failure=3
+    Readiness:  http-get http://:80/ delay=5s timeout=3s period=5s #success=1 #failure=3
+    Environment:
+      VITE_API_URL:  backend-service.taskmaster-dev.svc.cluster.local:5000
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-9t855 (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-9t855:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:                      <none>
+
+
+Name:             mongodb-758c88bfd5-5wnlp
+Namespace:        taskmaster-dev
+Priority:         0
+Service Account:  default
+Node:             ip-10-0-1-67.ec2.internal/10.0.1.67
+Start Time:       Fri, 16 Jan 2026 13:48:09 +0000
+Labels:           app=mongodb
+                  pod-template-hash=758c88bfd5
+                  tier=database
+Annotations:      <none>
+Status:           Running
+IP:               10.0.1.179
+IPs:
+  IP:           10.0.1.179
+Controlled By:  ReplicaSet/mongodb-758c88bfd5
+Containers:
+  mongodb:
+    Container ID:   containerd://728ed43c4c89126ab49a024d3f6778e818e9ce61562883ae3b2c9bf21f70a867
+    Image:          mongo:7.0
+    Image ID:       docker.io/library/mongo@sha256:8de574ce88c80b8bf7b839c3f327fabe271445dd05ea0ad8761e396a7d551ba2
+    Port:           27017/TCP (mongodb)
+    Host Port:      0/TCP (mongodb)
+    State:          Running
+      Started:      Fri, 16 Jan 2026 13:48:09 +0000
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:     500m
+      memory:  512Mi
+    Requests:
+      cpu:      250m
+      memory:   256Mi
+    Liveness:   exec [mongosh --eval db.adminCommand('ping')] delay=30s timeout=5s period=10s #success=1 #failure=3
+    Readiness:  exec [mongosh --eval db.adminCommand('ping')] delay=10s timeout=3s period=5s #success=1 #failure=3
+    Environment:
+      MONGO_INITDB_ROOT_USERNAME:  <set to the key 'MONGO_ROOT_USER' in secret 'taskmaster-secrets'>      Optional: false
+      MONGO_INITDB_ROOT_PASSWORD:  <set to the key 'MONGO_ROOT_PASSWORD' in secret 'taskmaster-secrets'>  Optional: false
+      MONGO_INITDB_DATABASE:       <set to the key 'MONGO_DATABASE' of config map 'taskmaster-config'>    Optional: false
+    Mounts:
+      /data/db from mongodb-data (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-q46fc (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  mongodb-data:
+    Type:       EmptyDir (a temporary directory that shares a pod's lifetime)
+    Medium:     
+    SizeLimit:  <unset>
+  kube-api-access-q46fc:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:                      <none>

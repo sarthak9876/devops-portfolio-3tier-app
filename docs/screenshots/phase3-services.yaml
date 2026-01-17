@@ -1,0 +1,147 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app":"backend","tier":"api"},"name":"backend-service","namespace":"taskmaster-dev"},"spec":{"ports":[{"name":"http","port":5000,"protocol":"TCP","targetPort":5000}],"selector":{"app":"backend"},"sessionAffinity":"None","type":"ClusterIP"}}
+    creationTimestamp: "2026-01-16T13:48:22Z"
+    labels:
+      app: backend
+      tier: api
+    name: backend-service
+    namespace: taskmaster-dev
+    resourceVersion: "243814"
+    uid: d4c9a745-74fb-4dbc-bcc7-15910ef0f306
+  spec:
+    clusterIP: 172.20.3.247
+    clusterIPs:
+    - 172.20.3.247
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 5000
+      protocol: TCP
+      targetPort: 5000
+    selector:
+      app: backend
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{"service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled":"true","service.beta.kubernetes.io/aws-load-balancer-scheme":"internet-facing","service.beta.kubernetes.io/aws-load-balancer-type":"nlb"},"labels":{"app":"frontend","tier":"presentation"},"name":"frontend-loadbalancer","namespace":"taskmaster-dev"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":80}],"selector":{"app":"frontend"},"type":"LoadBalancer"}}
+      service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+      service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+      service.beta.kubernetes.io/aws-load-balancer-type: nlb
+    creationTimestamp: "2026-01-16T15:40:57Z"
+    finalizers:
+    - service.kubernetes.io/load-balancer-cleanup
+    labels:
+      app: frontend
+      tier: presentation
+    name: frontend-loadbalancer
+    namespace: taskmaster-dev
+    resourceVersion: "262154"
+    uid: 0953ae53-d2ef-46a6-a224-d215554f1f87
+  spec:
+    allocateLoadBalancerNodePorts: true
+    clusterIP: 172.20.242.250
+    clusterIPs:
+    - 172.20.242.250
+    externalTrafficPolicy: Cluster
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      nodePort: 30875
+      port: 80
+      protocol: TCP
+      targetPort: 80
+    selector:
+      app: frontend
+    sessionAffinity: None
+    type: LoadBalancer
+  status:
+    loadBalancer:
+      ingress:
+      - hostname: a0953ae53d2ef46a6a224d215554f1f8-39967a2d8d983ec8.elb.us-east-1.amazonaws.com
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app":"frontend","tier":"presentation"},"name":"frontend-service","namespace":"taskmaster-dev"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":80}],"selector":{"app":"frontend"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-01-16T15:40:57Z"
+    labels:
+      app: frontend
+      tier: presentation
+    name: frontend-service
+    namespace: taskmaster-dev
+    resourceVersion: "262136"
+    uid: 5e285be7-d901-4549-a1e2-fca995122b6f
+  spec:
+    clusterIP: 172.20.211.105
+    clusterIPs:
+    - 172.20.211.105
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 80
+    selector:
+      app: frontend
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app":"mongodb","tier":"database"},"name":"mongodb-service","namespace":"taskmaster-dev"},"spec":{"ports":[{"name":"mongodb","port":27017,"protocol":"TCP","targetPort":27017}],"selector":{"app":"mongodb"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-01-16T13:48:09Z"
+    labels:
+      app: mongodb
+      tier: database
+    name: mongodb-service
+    namespace: taskmaster-dev
+    resourceVersion: "243746"
+    uid: 8c554aff-fc91-423a-bf87-e8321820b265
+  spec:
+    clusterIP: 172.20.43.252
+    clusterIPs:
+    - 172.20.43.252
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: mongodb
+      port: 27017
+      protocol: TCP
+      targetPort: 27017
+    selector:
+      app: mongodb
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+kind: List
+metadata:
+  resourceVersion: ""

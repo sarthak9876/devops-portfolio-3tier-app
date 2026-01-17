@@ -1,0 +1,578 @@
+apiVersion: v1
+items:
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "4"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"labels":{"app":"backend","tier":"api"},"name":"backend","namespace":"taskmaster-dev"},"spec":{"replicas":2,"selector":{"matchLabels":{"app":"backend"}},"strategy":{"rollingUpdate":{"maxSurge":1,"maxUnavailable":0},"type":"RollingUpdate"},"template":{"metadata":{"labels":{"app":"backend","tier":"api"}},"spec":{"containers":[{"env":[{"name":"NODE_ENV","valueFrom":{"configMapKeyRef":{"key":"NODE_ENV","name":"taskmaster-config"}}},{"name":"PORT","valueFrom":{"configMapKeyRef":{"key":"API_PORT","name":"taskmaster-config"}}},{"name":"CORS_ORIGIN","valueFrom":{"configMapKeyRef":{"key":"CORS_ORIGIN","name":"taskmaster-config"}}},{"name":"LOG_LEVEL","valueFrom":{"configMapKeyRef":{"key":"LOG_LEVEL","name":"taskmaster-config"}}},{"name":"MONGO_URI","valueFrom":{"secretKeyRef":{"key":"MONGO_URI","name":"taskmaster-secrets"}}}],"image":"364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-backend:latest","imagePullPolicy":"Always","livenessProbe":{"failureThreshold":3,"httpGet":{"path":"/health","port":5000},"initialDelaySeconds":30,"periodSeconds":10,"timeoutSeconds":5},"name":"backend","ports":[{"containerPort":5000,"name":"http","protocol":"TCP"}],"readinessProbe":{"failureThreshold":3,"httpGet":{"path":"/health","port":5000},"initialDelaySeconds":10,"periodSeconds":5,"timeoutSeconds":3},"resources":{"limits":{"cpu":"200m","memory":"256Mi"},"requests":{"cpu":"100m","memory":"128Mi"}},"startupProbe":{"failureThreshold":30,"httpGet":{"path":"/health","port":5000},"initialDelaySeconds":0,"periodSeconds":5,"timeoutSeconds":3}}]}}}}
+    creationTimestamp: "2026-01-16T13:48:21Z"
+    generation: 4
+    labels:
+      app: backend
+      tier: api
+    name: backend
+    namespace: taskmaster-dev
+    resourceVersion: "417692"
+    uid: 7181136b-f9d3-41ec-97ca-4b9d9b089616
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 2
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: backend
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+      type: RollingUpdate
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2026-01-17T07:59:05Z"
+        creationTimestamp: null
+        labels:
+          app: backend
+          tier: api
+      spec:
+        containers:
+        - env:
+          - name: NODE_ENV
+            valueFrom:
+              configMapKeyRef:
+                key: NODE_ENV
+                name: taskmaster-config
+          - name: PORT
+            valueFrom:
+              configMapKeyRef:
+                key: API_PORT
+                name: taskmaster-config
+          - name: CORS_ORIGIN
+            valueFrom:
+              configMapKeyRef:
+                key: CORS_ORIGIN
+                name: taskmaster-config
+          - name: LOG_LEVEL
+            valueFrom:
+              configMapKeyRef:
+                key: LOG_LEVEL
+                name: taskmaster-config
+          - name: MONGO_URI
+            valueFrom:
+              secretKeyRef:
+                key: MONGO_URI
+                name: taskmaster-secrets
+          image: 364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-backend:latest
+          imagePullPolicy: Always
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: 5000
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          name: backend
+          ports:
+          - containerPort: 5000
+            name: http
+            protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: 5000
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          startupProbe:
+            failureThreshold: 30
+            httpGet:
+              path: /health
+              port: 5000
+              scheme: HTTP
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 2
+    conditions:
+    - lastTransitionTime: "2026-01-16T13:48:33Z"
+      lastUpdateTime: "2026-01-16T13:48:33Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    - lastTransitionTime: "2026-01-17T07:59:05Z"
+      lastUpdateTime: "2026-01-17T07:59:26Z"
+      message: ReplicaSet "backend-5dccbbbf74" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    observedGeneration: 4
+    readyReplicas: 2
+    replicas: 2
+    updatedReplicas: 2
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "4"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"labels":{"app":"frontend","tier":"presentation"},"name":"frontend","namespace":"taskmaster-dev"},"spec":{"replicas":3,"selector":{"matchLabels":{"app":"frontend"}},"strategy":{"rollingUpdate":{"maxSurge":1,"maxUnavailable":0},"type":"RollingUpdate"},"template":{"metadata":{"labels":{"app":"frontend","tier":"presentation"}},"spec":{"containers":[{"env":[{"name":"VITE_API_URL","value":"backend-service.taskmaster-dev.svc.cluster.local:5000"}],"image":"364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-frontend:latest","imagePullPolicy":"Always","livenessProbe":{"failureThreshold":3,"httpGet":{"path":"/","port":80},"initialDelaySeconds":30,"periodSeconds":10,"timeoutSeconds":5},"name":"frontend","ports":[{"containerPort":80,"name":"http","protocol":"TCP"}],"readinessProbe":{"failureThreshold":3,"httpGet":{"path":"/","port":80},"initialDelaySeconds":5,"periodSeconds":5,"timeoutSeconds":3},"resources":{"limits":{"cpu":"100m","memory":"128Mi"},"requests":{"cpu":"50m","memory":"64Mi"}}}]}}}}
+    creationTimestamp: "2026-01-16T15:00:39Z"
+    generation: 4
+    labels:
+      app: frontend
+      tier: presentation
+    name: frontend
+    namespace: taskmaster-dev
+    resourceVersion: "413578"
+    uid: 8702a258-d500-4256-bace-148ddf42284b
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 3
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: frontend
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+      type: RollingUpdate
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2026-01-17T07:34:38Z"
+        creationTimestamp: null
+        labels:
+          app: frontend
+          tier: presentation
+      spec:
+        containers:
+        - env:
+          - name: VITE_API_URL
+            value: backend-service.taskmaster-dev.svc.cluster.local:5000
+          image: 364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-frontend:latest
+          imagePullPolicy: Always
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /
+              port: 80
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          name: frontend
+          ports:
+          - containerPort: 80
+            name: http
+            protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /
+              port: 80
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 3
+    conditions:
+    - lastTransitionTime: "2026-01-16T18:14:24Z"
+      lastUpdateTime: "2026-01-16T18:14:24Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    - lastTransitionTime: "2026-01-16T15:00:39Z"
+      lastUpdateTime: "2026-01-17T07:35:05Z"
+      message: ReplicaSet "frontend-7fb6676b7c" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    observedGeneration: 4
+    readyReplicas: 3
+    replicas: 3
+    updatedReplicas: 3
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"labels":{"app":"mongodb","tier":"database"},"name":"mongodb","namespace":"taskmaster-dev"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"mongodb"}},"template":{"metadata":{"labels":{"app":"mongodb","tier":"database"}},"spec":{"containers":[{"env":[{"name":"MONGO_INITDB_ROOT_USERNAME","valueFrom":{"secretKeyRef":{"key":"MONGO_ROOT_USER","name":"taskmaster-secrets"}}},{"name":"MONGO_INITDB_ROOT_PASSWORD","valueFrom":{"secretKeyRef":{"key":"MONGO_ROOT_PASSWORD","name":"taskmaster-secrets"}}},{"name":"MONGO_INITDB_DATABASE","valueFrom":{"configMapKeyRef":{"key":"MONGO_DATABASE","name":"taskmaster-config"}}}],"image":"mongo:7.0","livenessProbe":{"exec":{"command":["mongosh","--eval","db.adminCommand('ping')"]},"failureThreshold":3,"initialDelaySeconds":30,"periodSeconds":10,"timeoutSeconds":5},"name":"mongodb","ports":[{"containerPort":27017,"name":"mongodb","protocol":"TCP"}],"readinessProbe":{"exec":{"command":["mongosh","--eval","db.adminCommand('ping')"]},"failureThreshold":3,"initialDelaySeconds":10,"periodSeconds":5,"timeoutSeconds":3},"resources":{"limits":{"cpu":"500m","memory":"512Mi"},"requests":{"cpu":"250m","memory":"256Mi"}},"volumeMounts":[{"mountPath":"/data/db","name":"mongodb-data"}]}],"volumes":[{"emptyDir":{},"name":"mongodb-data"}]}}}}
+    creationTimestamp: "2026-01-16T13:48:09Z"
+    generation: 1
+    labels:
+      app: mongodb
+      tier: database
+    name: mongodb
+    namespace: taskmaster-dev
+    resourceVersion: "243798"
+    uid: 523c1161-785d-46e5-81b8-c255a41e2f5d
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: mongodb
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: mongodb
+          tier: database
+      spec:
+        containers:
+        - env:
+          - name: MONGO_INITDB_ROOT_USERNAME
+            valueFrom:
+              secretKeyRef:
+                key: MONGO_ROOT_USER
+                name: taskmaster-secrets
+          - name: MONGO_INITDB_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: MONGO_ROOT_PASSWORD
+                name: taskmaster-secrets
+          - name: MONGO_INITDB_DATABASE
+            valueFrom:
+              configMapKeyRef:
+                key: MONGO_DATABASE
+                name: taskmaster-config
+          image: mongo:7.0
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            exec:
+              command:
+              - mongosh
+              - --eval
+              - db.adminCommand('ping')
+            failureThreshold: 3
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          name: mongodb
+          ports:
+          - containerPort: 27017
+            name: mongodb
+            protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+              - mongosh
+              - --eval
+              - db.adminCommand('ping')
+            failureThreshold: 3
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 250m
+              memory: 256Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /data/db
+            name: mongodb-data
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - emptyDir: {}
+          name: mongodb-data
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: "2026-01-16T13:48:20Z"
+      lastUpdateTime: "2026-01-16T13:48:20Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    - lastTransitionTime: "2026-01-16T13:48:09Z"
+      lastUpdateTime: "2026-01-16T13:48:20Z"
+      message: ReplicaSet "mongodb-758c88bfd5" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app":"backend","tier":"api"},"name":"backend-service","namespace":"taskmaster-dev"},"spec":{"ports":[{"name":"http","port":5000,"protocol":"TCP","targetPort":5000}],"selector":{"app":"backend"},"sessionAffinity":"None","type":"ClusterIP"}}
+    creationTimestamp: "2026-01-16T13:48:22Z"
+    labels:
+      app: backend
+      tier: api
+    name: backend-service
+    namespace: taskmaster-dev
+    resourceVersion: "243814"
+    uid: d4c9a745-74fb-4dbc-bcc7-15910ef0f306
+  spec:
+    clusterIP: 172.20.3.247
+    clusterIPs:
+    - 172.20.3.247
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 5000
+      protocol: TCP
+      targetPort: 5000
+    selector:
+      app: backend
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{"service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled":"true","service.beta.kubernetes.io/aws-load-balancer-scheme":"internet-facing","service.beta.kubernetes.io/aws-load-balancer-type":"nlb"},"labels":{"app":"frontend","tier":"presentation"},"name":"frontend-loadbalancer","namespace":"taskmaster-dev"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":80}],"selector":{"app":"frontend"},"type":"LoadBalancer"}}
+      service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+      service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+      service.beta.kubernetes.io/aws-load-balancer-type: nlb
+    creationTimestamp: "2026-01-16T15:40:57Z"
+    finalizers:
+    - service.kubernetes.io/load-balancer-cleanup
+    labels:
+      app: frontend
+      tier: presentation
+    name: frontend-loadbalancer
+    namespace: taskmaster-dev
+    resourceVersion: "262154"
+    uid: 0953ae53-d2ef-46a6-a224-d215554f1f87
+  spec:
+    allocateLoadBalancerNodePorts: true
+    clusterIP: 172.20.242.250
+    clusterIPs:
+    - 172.20.242.250
+    externalTrafficPolicy: Cluster
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      nodePort: 30875
+      port: 80
+      protocol: TCP
+      targetPort: 80
+    selector:
+      app: frontend
+    sessionAffinity: None
+    type: LoadBalancer
+  status:
+    loadBalancer:
+      ingress:
+      - hostname: a0953ae53d2ef46a6a224d215554f1f8-39967a2d8d983ec8.elb.us-east-1.amazonaws.com
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app":"frontend","tier":"presentation"},"name":"frontend-service","namespace":"taskmaster-dev"},"spec":{"ports":[{"name":"http","port":80,"protocol":"TCP","targetPort":80}],"selector":{"app":"frontend"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-01-16T15:40:57Z"
+    labels:
+      app: frontend
+      tier: presentation
+    name: frontend-service
+    namespace: taskmaster-dev
+    resourceVersion: "262136"
+    uid: 5e285be7-d901-4549-a1e2-fca995122b6f
+  spec:
+    clusterIP: 172.20.211.105
+    clusterIPs:
+    - 172.20.211.105
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 80
+    selector:
+      app: frontend
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"app":"mongodb","tier":"database"},"name":"mongodb-service","namespace":"taskmaster-dev"},"spec":{"ports":[{"name":"mongodb","port":27017,"protocol":"TCP","targetPort":27017}],"selector":{"app":"mongodb"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-01-16T13:48:09Z"
+    labels:
+      app: mongodb
+      tier: database
+    name: mongodb-service
+    namespace: taskmaster-dev
+    resourceVersion: "243746"
+    uid: 8c554aff-fc91-423a-bf87-e8321820b265
+  spec:
+    clusterIP: 172.20.43.252
+    clusterIPs:
+    - 172.20.43.252
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: mongodb
+      port: 27017
+      protocol: TCP
+      targetPort: 27017
+    selector:
+      app: mongodb
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  data:
+    ca.crt: |
+      -----BEGIN CERTIFICATE-----
+      MIIDBTCCAe2gAwIBAgIIJEGLwgv6HtMwDQYJKoZIhvcNAQELBQAwFTETMBEGA1UE
+      AxMKa3ViZXJuZXRlczAeFw0yNjAxMTUxMjI0MzFaFw0zNjAxMTMxMjI5MzFaMBUx
+      EzARBgNVBAMTCmt1YmVybmV0ZXMwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK
+      AoIBAQCztvdYJaitq1B+djFNTCSwaPrBl4yyOdk1PYg2BWJLH3Pouic5v9ctJTl7
+      AsdxAIo6p0Qt3yLYU+CPnnu7kpxGE75ZtWW1MiV3ZnbVozJzBIuTe2FLnsDTatD1
+      9IF2RKKLwx3RTyyZBH9hshIxMJJkhBM7i1sDZGirkXWzPlOtaQe+XybtTavD/Syh
+      qUWjxmXQRatxgINVGuY0+qYpCkJ9oRSRlgFvJiGu9ndxTyT8HTB5P0VqiMsYOwmu
+      8o7sQgzeUwo5Dw7bqTDvvvHn35kqxOm1A2qD1JWzu6zUzco1LXP0LOFNpLdLHrho
+      6A8e7MBf7OkqNKS8g8VxvwUZmtDvAgMBAAGjWTBXMA4GA1UdDwEB/wQEAwICpDAP
+      BgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBSw+02+z4tzahx+pF/LDpe5C6fiJTAV
+      BgNVHREEDjAMggprdWJlcm5ldGVzMA0GCSqGSIb3DQEBCwUAA4IBAQBF4Hr+tHSh
+      D3L2v59cuEXFJiQrQOcHub3umO2aw/wViIc+QXP6sdRYb6S5jqsmgFTzuJ5AcOth
+      wktzH7TN5EvZGda9sP+sK+Pt77tXcWHalMLXjik1eYpIzFMJMwttyJfcyiu9su98
+      hlPF88fvLHlbdurE/BWeP69/01HSb1dAWNrXXhqPyDrVyrdkp5ekkettj2rO3Xjx
+      qTv3uUoG0P57j519P2QYPecIDBwkoEFbdNrRd4Dhgniu3+m5p6fn+6xGRls2QTc3
+      43gWKHNcScb6WbwLsPVk7XdLGSnPIAh4aNC5JfOeekiasuST1asDtRODhFltFVwW
+      1HSgg3IziRLN
+      -----END CERTIFICATE-----
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubernetes.io/description: Contains a CA bundle that can be used to verify the
+        kube-apiserver when using internal endpoints such as the internal service
+        IP or kubernetes.default.svc. No other usage is guaranteed across distributions
+        of Kubernetes clusters.
+    creationTimestamp: "2026-01-15T13:37:10Z"
+    name: kube-root-ca.crt
+    namespace: taskmaster-dev
+    resourceVersion: "11050"
+    uid: 890cc250-e0b6-4f1a-b758-1f57c41b6c55
+- apiVersion: v1
+  data:
+    API_PORT: "5000"
+    CORS_ORIGIN: '*'
+    LOG_LEVEL: info
+    MONGO_DATABASE: taskmaster
+    MONGO_HOST: mongodb-service.taskmaster-dev.svc.cluster.local
+    MONGO_PORT: "27017"
+    NODE_ENV: production
+    VITE_API_URL: http://backend-service.taskmaster-dev.svc.cluster.local:5000
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"API_PORT":"5000","CORS_ORIGIN":"*","LOG_LEVEL":"info","MONGO_DATABASE":"taskmaster","MONGO_HOST":"mongodb-service.taskmaster-dev.svc.cluster.local","MONGO_PORT":"27017","NODE_ENV":"production","VITE_API_URL":"http://backend-service.taskmaster-dev.svc.cluster.local:5000"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app":"taskmaster","environment":"dev"},"name":"taskmaster-config","namespace":"taskmaster-dev"}}
+    creationTimestamp: "2026-01-15T13:37:11Z"
+    labels:
+      app: taskmaster
+      environment: dev
+    name: taskmaster-config
+    namespace: taskmaster-dev
+    resourceVersion: "11056"
+    uid: 8edb1420-b4fe-4830-a199-97175e7b57f2
+- apiVersion: v1
+  data:
+    MONGO_ROOT_PASSWORD: U3VwZXJTZWN1cmVQYXNzd29yZDEyMyE=
+    MONGO_ROOT_USER: YWRtaW4=
+    MONGO_URI: bW9uZ29kYjovL2FkbWluOlN1cGVyU2VjdXJlUGFzc3dvcmQxMjMhQG1vbmdvZGItc2VydmljZS50YXNrbWFzdGVyLWRldi5zdmMuY2x1c3Rlci5sb2NhbDoyNzAxNy90YXNrbWFzdGVyP2F1dGhTb3VyY2U9YWRtaW4=
+    VITE_API_URL: YmFja2VuZC1zZXJ2aWNlLnRhc2ttYXN0ZXItZGV2LnN2Yy5jbHVzdGVyLmxvY2FsOjUwMDA=
+  kind: Secret
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"MONGO_ROOT_PASSWORD":"U3VwZXJTZWN1cmVQYXNzd29yZDEyMyE=","MONGO_ROOT_USER":"YWRtaW4=","MONGO_URI":"bW9uZ29kYjovL2FkbWluOlN1cGVyU2VjdXJlUGFzc3dvcmQxMjMhQG1vbmdvZGItc2VydmljZS50YXNrbWFzdGVyLWRldi5zdmMuY2x1c3Rlci5sb2NhbDoyNzAxNy90YXNrbWFzdGVyP2F1dGhTb3VyY2U9YWRtaW4=","VITE_API_URL":"YmFja2VuZC1zZXJ2aWNlLnRhc2ttYXN0ZXItZGV2LnN2Yy5jbHVzdGVyLmxvY2FsOjUwMDA="},"kind":"Secret","metadata":{"annotations":{},"labels":{"app":"taskmaster","environment":"dev"},"name":"taskmaster-secrets","namespace":"taskmaster-dev"},"type":"Opaque"}
+    creationTimestamp: "2026-01-15T14:13:14Z"
+    labels:
+      app: taskmaster
+      environment: dev
+    name: taskmaster-secrets
+    namespace: taskmaster-dev
+    resourceVersion: "259916"
+    uid: e15143c0-25b6-43d8-9bc7-b2f3f5aa7bdf
+  type: Opaque
+kind: List
+metadata:
+  resourceVersion: ""

@@ -1,0 +1,29 @@
+NAME                            READY   STATUS    RESTARTS   AGE    IP           NODE                        NOMINATED NODE   READINESS GATES
+pod/backend-5dccbbbf74-d5bhd    1/1     Running   0          102m   10.0.1.51    ip-10-0-1-67.ec2.internal   <none>           <none>
+pod/backend-5dccbbbf74-xffbf    1/1     Running   0          102m   10.0.1.54    ip-10-0-1-67.ec2.internal   <none>           <none>
+pod/frontend-7fb6676b7c-2vb46   1/1     Running   0          127m   10.0.1.210   ip-10-0-1-67.ec2.internal   <none>           <none>
+pod/frontend-7fb6676b7c-mqgnh   1/1     Running   0          127m   10.0.1.159   ip-10-0-1-67.ec2.internal   <none>           <none>
+pod/frontend-7fb6676b7c-xfnrv   1/1     Running   0          127m   10.0.1.220   ip-10-0-1-67.ec2.internal   <none>           <none>
+pod/mongodb-758c88bfd5-5wnlp    1/1     Running   0          19h    10.0.1.179   ip-10-0-1-67.ec2.internal   <none>           <none>
+
+NAME                            TYPE           CLUSTER-IP       EXTERNAL-IP                                                                     PORT(S)        AGE   SELECTOR
+service/backend-service         ClusterIP      172.20.3.247     <none>                                                                          5000/TCP       19h   app=backend
+service/frontend-loadbalancer   LoadBalancer   172.20.242.250   a0953ae53d2ef46a6a224d215554f1f8-39967a2d8d983ec8.elb.us-east-1.amazonaws.com   80:30875/TCP   18h   app=frontend
+service/frontend-service        ClusterIP      172.20.211.105   <none>                                                                          80/TCP         18h   app=frontend
+service/mongodb-service         ClusterIP      172.20.43.252    <none>                                                                          27017/TCP      19h   app=mongodb
+
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                                                                    SELECTOR
+deployment.apps/backend    2/2     2            2           19h   backend      364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-backend:latest    app=backend
+deployment.apps/frontend   3/3     3            3           18h   frontend     364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-frontend:latest   app=frontend
+deployment.apps/mongodb    1/1     1            1           19h   mongodb      mongo:7.0                                                                 app=mongodb
+
+NAME                                  DESIRED   CURRENT   READY   AGE    CONTAINERS   IMAGES                                                                    SELECTOR
+replicaset.apps/backend-5dccbbbf74    2         2         2       102m   backend      364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-backend:latest    app=backend,pod-template-hash=5dccbbbf74
+replicaset.apps/backend-645f644c78    0         0         0       19h    backend      364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-backend:latest    app=backend,pod-template-hash=645f644c78
+replicaset.apps/backend-655cb47f55    0         0         0       127m   backend      364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-backend:latest    app=backend,pod-template-hash=655cb47f55
+replicaset.apps/backend-7b5bc56f49    0         0         0       123m   backend      364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-backend:latest    app=backend,pod-template-hash=7b5bc56f49
+replicaset.apps/frontend-55bd997f94   0         0         0       18h    frontend     364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-frontend:latest   app=frontend,pod-template-hash=55bd997f94
+replicaset.apps/frontend-5b986b6b54   0         0         0       18h    frontend     364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-frontend:latest   app=frontend,pod-template-hash=5b986b6b54
+replicaset.apps/frontend-778789c7c5   0         0         0       18h    frontend     364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-frontend:latest   app=frontend,pod-template-hash=778789c7c5
+replicaset.apps/frontend-7fb6676b7c   3         3         3       127m   frontend     364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-frontend:latest   app=frontend,pod-template-hash=7fb6676b7c
+replicaset.apps/mongodb-758c88bfd5    1         1         1       19h    mongodb      mongo:7.0                                                                 app=mongodb,pod-template-hash=758c88bfd5
