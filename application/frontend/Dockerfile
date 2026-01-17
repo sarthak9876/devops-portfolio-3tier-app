@@ -1,51 +1,75 @@
-############################
-# Stage 1: Build React app
-############################
+# ═══════════════════════════════════════════════════════
+# TaskMaster Frontend Dockerfile
+# Multi-stage build: Dependencies → Build → Production
+# ═══════════════════════════════════════════════════════
 
-FROM node:20-alpine AS build
-# Use Node 20 Alpine for building the frontend (small image).
-# AS build: Name this stage "build".
-
+############################
+# Stage 1: Dependencies
+############################
+FROM node:20-alpine AS deps
 
 WORKDIR /app
-# Set work directory to app in image
 
+# Copy package files
 COPY package*.json ./
-# Copy package.json (and package-lock.json when present) for dependency installation.
 
+# Install dependencies (clean install for reproducibility)
+RUN if [ -f package-lock.json ]; then \
+      npm ci --only=production --ignore-scripts; \
+    else \
+      npm install --only=production --ignore-scripts; \
+    fi
+
+# Install dev dependencies for build
 RUN npm install
-# Install all dependencies required for building the React app.
 
-COPY . . 
-# Copy rest of frontend dependencies required for building React App
+# Clean npm cache
+RUN npm cache clean --force
 
-ARG VITE_API_URL=http://localhost:5000
-# ARG: Build-time argument, not persisted as runtime env var.
-# Default VITE_API_URL if not overridden at build time.
+############################
+# Stage 2: Build
+############################
+FROM node:20-alpine AS builder
 
-ENV VITE_API_URL=$VITE_API_URL
-# ENV: Set environment variable inside build stage.
-# Vite will use this when building the app (import.meta.env.VITE_API_URL).
+WORKDIR /app
 
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy source code
+COPY . .
+
+# Build the app
+# NO VITE_API_URL needed - we use relative URLs!
 RUN npm run build
-# Build the production-optimized static files (Vite output into dist/).
+
+# List build output for debugging
+RUN ls -lah /app/dist
 
 ############################
-# Stage 2: NGINX runtime
+# Stage 3: Production (NGINX)
 ############################
+FROM nginx:1.27-alpine AS production
 
-FROM nginx:1.27-alpine AS runtime
-# Use official NGINX Alpine image as lightweight web server.
+# Install curl for health checks
+RUN apk add --no-cache curl
 
+# Copy custom nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-# Replace default NGINX site configuration with our custom config.
 
-COPY --from=build /app/dist /usr/share/nginx/html
-# Copy built static files from build stage into NGINX's web root.
+# Copy built static files from builder stage
+COPY --from=builder /app/dist /usr/share/nginx/html
 
+# Verify files were copied
+RUN ls -lah /usr/share/nginx/html
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost/nginx-health || exit 1
+
+# Expose port 80
 EXPOSE 80
-# Document that container listens on port 80.
 
-CMD ["nginx","-g","daemon off;"]
-# Start NGINX in foreground mode (required for Docker to keep container running).
+# Start nginx in foreground
+CMD ["nginx", "-g", "daemon off;"]
 

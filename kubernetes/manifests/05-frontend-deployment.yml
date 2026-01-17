@@ -32,7 +32,8 @@ spec:
       containers:
       - name: frontend
         # ⚠️  UPDATE THIS WITH YOUR ECR IMAGE URI
-        image: ${ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com/taskmaster-frontend:latest
+        # Make sure to rebuild and push the frontend image after nginx.conf changes
+        image: 364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-frontend:latest
         imagePullPolicy: Always
         
         ports:
@@ -41,11 +42,15 @@ spec:
           protocol: TCP
         
         env:
-        # API URL for frontend to call backend
-        # This needs to be the LoadBalancer URL (we'll update this later)
+        # API URL for frontend - nginx will proxy /api requests to backend
+        # Empty string means frontend will use relative URLs (/api/*) which nginx proxies
+#        - name: VITE_API_URL
+ #         valueFrom:
+  #          secretKeyRef:
+   #           name: taskmaster-secrets
+    #          key: VITE_API_URL
         - name: VITE_API_URL
-          value: "http://backend-service.taskmaster-dev.svc.cluster.local:5000"
-        
+          value: "backend-service.taskmaster-dev.svc.cluster.local:5000"
         resources:
           requests:
             memory: "64Mi"

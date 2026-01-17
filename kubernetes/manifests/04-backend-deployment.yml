@@ -33,7 +33,7 @@ spec:
       containers:
       - name: backend
         # ⚠️  UPDATE THIS WITH YOUR ECR IMAGE URI
-        image: ${ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com/taskmaster-backend:latest
+        image: 364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-backend:latest
         imagePullPolicy: Always
 
 
