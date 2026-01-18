@@ -191,3 +191,28 @@ MIT License - feel free to use this as inspiration for your own portfolio!
 ---
 
 **Status:** 🚧 Work in Progress | Current Phase: Infrastructure Foundation
+
+## 🚀 Quick Start - New Workstation Setup
+
+Setting up the project on a new machine? Run the automated bootstrap:
+
+```bash
+# Clone repository
+git clone https://github.com/YOUR_USERNAME/devops-portfolio-3tier-app.git
+cd devops-portfolio-3tier-app
+
+# Run bootstrap (installs Docker, kubectl, Helm, Terraform, AWS CLI, Node.js, etc.)
+./scripts/bootstrap/setup-workstation.sh
+
+# Log out and log back in (required for Docker permissions)
+exit
+
+# Verify installation
+./scripts/bootstrap/check-prerequisites.sh
+
+# Configure AWS
+aws configure
+
+# Validate AWS setup
+./scripts/bootstrap/validate-aws-setup.sh
+See Bootstrap Guide for detailed instructions.
