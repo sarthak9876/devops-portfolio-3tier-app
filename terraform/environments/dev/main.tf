@@ -92,7 +92,7 @@ module "eks" {
 
   project_name    = var.project_name
   environment     = var.environment
-  cluster_version = "1.30"
+  cluster_version = var.cluster_version
   vpc_id          = module.vpc.vpc_id
 
   # Pass ALL public subnets (multi-AZ) to satisfy EKS requirement

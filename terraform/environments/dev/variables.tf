@@ -107,3 +107,9 @@ variable "eks_max_size" {
   type        = number
   default     = 2
 }
+
+variable "cluster_version" {
+  description = "Cluster version for EKS"
+  type = string
+  default= "1.32"
+}
