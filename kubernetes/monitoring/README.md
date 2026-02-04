@@ -13,7 +13,7 @@ This directory contains the configuration for our production-grade monitoring st
 - **Prometheus Operator**: Manages Prometheus instances via CRDs
 
 ## Architecture
-```
+```bash
 ┌─────────────────────────────────────────────────────────┐
 │ Monitoring Namespace │
 ├─────────────────────────────────────────────────────────┤
