@@ -1,360 +1,266 @@
-# Kubernetes Monitoring Stack
+# Monitoring Stack - Prometheus + Grafana
 
-This directory contains the configuration and deployment files for a comprehensive Kubernetes monitoring stack based on the **kube-prometheus-stack** Helm chart. The monitoring stack provides full observability for the TaskMaster application running on AWS EKS.
+## Overview
 
-## 🏗️ Architecture Overview
+This directory contains the configuration for our production-grade monitoring stack using the `kube-prometheus-stack` Helm chart.
 
-The monitoring stack consists of the following components:
+**Components:**
+- **Prometheus**: Time-series database and metrics collection
+- **Grafana**: Visualization and dashboards
+- **Alertmanager**: Alert routing and notifications
+- **kube-state-metrics**: Kubernetes cluster state metrics
+- **node-exporter**: Hardware and OS metrics
+- **Prometheus Operator**: Manages Prometheus instances via CRDs
 
-### Core Components
-- **Prometheus**: Metrics collection and storage system
-- **Grafana**: Visualization and dashboard platform
-- **AlertManager**: Alert routing and notification management
-- **Prometheus Operator**: Manages Prometheus, AlertManager, and related monitoring components
-
-### Metrics Collectors
-- **Node Exporter**: Collects system-level metrics from cluster nodes
-- **Kube State Metrics**: Generates metrics about Kubernetes objects (pods, deployments, services, etc.)
-- **cAdvisor**: Collects container metrics (integrated with kubelet)
-
-### Storage
-- **AWS EBS CSI Driver**: Provides persistent storage for Prometheus and Grafana data
-- **GP3 Storage Class**: Optimized EBS storage class with encryption and expansion support
-
-## 📊 What Gets Monitored
-
-### Infrastructure Metrics
-- Node CPU, memory, disk, and network usage
-- Kubernetes cluster health and performance
-- Persistent volume usage and status
-- Container resource consumption
-
-### Application Metrics
-- Pod lifecycle events and status
-- Service discovery and endpoint health
-- Deployment rollout status and replica counts
-- Custom application metrics (when instrumented)
-
-### Alerting Rules
-- Node down/unhealthy
-- Pod crashes and restarts
-- High resource utilization
-- Storage issues
-- Kubernetes API server availability
-- Network connectivity problems
-
-## 📁 Directory Structure
-
+## Architecture
 ```
-monitoring/
-├── README.md                           # This documentation
-├── values-monitoring-template.yaml     # Template configuration file
-├── current-values.yaml                 # Current deployed configuration
-├── storageclass-gp3.yaml               # AWS EBS GP3 storage class
-├── ebs-csi-driver-policy.json          # IAM policy for EBS CSI driver
-├── trust-policy.json                   # IAM trust policy for service account
-└── trust-policy-fixed.json            # Updated trust policy
+┌─────────────────────────────────────────────────────────┐
+│ Monitoring Namespace │
+├─────────────────────────────────────────────────────────┤
+│ 							  │
+│ Prometheus Server ──────┐ 				  │
+│ ↓ scrapes 	      │				          │
+│ ┌─────────────────┐ │ 				  |
+│ │ Application     │ │  				  │
+│ │ Metrics         │ │ 				  │
+│ │ (Backend API)   │ │ 				  │
+│ └─────────────────┘ │ 				  │
+│ │                   					  │
+│ ┌─────────────────┐ │ 				  │
+│ │ kube-state      │────┘ 				  │
+│ │ metrics         │ 					  │
+│ └─────────────────┘ 					  │
+│ │ 		      					  │
+│ ┌─────────────────┐ │ 				  │
+│ │ node-exporter   │────┘ 				  │
+│ │ (DaemonSet)     │					  │
+│ └─────────────────┘ 					  │
+│ │ 							  │
+│ ▼ 							  │
+│ ┌─────────────────┐         ┌──────────────────┐ 	  │
+│ │ Alertmanager    │────────▶│ Slack / Email    │	  │
+│ └─────────────────┘         └──────────────────┘ 	  │
+│ │                        				  │
+│ ▼ queries                                               │
+│ ┌─────────────────┐                                     │
+│ │ Grafana         │◀──── User Browser                   │
+│ │ (Dashboards)    │                                     │
+│ └─────────────────┘                                     │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
 ```
+text
 
-## 🚀 Deployment Instructions
+## Prerequisites
 
-### Prerequisites
+1. **EKS Cluster** with OIDC provider enabled
+2. **EBS CSI Driver** installed (for persistent volumes)
+3. **StorageClass** (gp3) configured as default
+4. **Helm 3.x** installed
+5. **kubectl** configured with cluster access
 
-1. **AWS EKS Cluster**: Running Kubernetes cluster with OIDC provider configured
-2. **kubectl**: Configured to access your EKS cluster
-3. **Helm 3**: Package manager for Kubernetes
-4. **AWS CLI**: For AWS resource management
+## Installation
 
-### Step 1: Configure AWS IAM (One-time Setup)
-
-#### Create EBS CSI Driver IAM Role
+### 1. Install EBS CSI Driver (if not already installed)
 
 ```bash
-# Create the IAM policy for EBS CSI driver
-aws iam create-policy \
-  --policy-name TaskMaster-EBS-CSI-Driver-Policy \
-  --policy-document file://ebs-csi-driver-policy.json
-
-# Create IAM role with OIDC trust relationship
-aws iam create-role \
-  --role-name TaskMaster-EBS-CSI-Driver-Role \
-  --assume-role-policy-document file://trust-policy-fixed.json
-
-# Attach the policy to the role
-aws iam attach-role-policy \
-  --role-name TaskMaster-EBS-CSI-Driver-Role \
-  --policy-arn arn:aws:iam::YOUR_ACCOUNT_ID:policy/TaskMaster-EBS-CSI-Driver-Policy
+# Install EBS CSI Driver as EKS addon
+aws eks create-addon \
+  --cluster-name taskmaster-eks-dev \
+  --addon-name aws-ebs-csi-driver \
+  --service-account-role-arn arn:aws:iam::YOUR_ACCOUNT_ID:role/AmazonEKS_EBS_CSI_DriverRole \
+  --region us-east-1
 ```
 
-#### Install EBS CSI Driver
-
+2. Create StorageClass
 ```bash
-# Add AWS EBS CSI driver Helm repository
-helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver
-helm repo update
-
-# Install EBS CSI driver
-helm upgrade --install aws-ebs-csi-driver aws-ebs-csi-driver/aws-ebs-csi-driver \
-  --namespace kube-system \
-  --set controller.serviceAccount.annotations."eks\.amazonaws\.com/role-arn"="arn:aws:iam::YOUR_ACCOUNT_ID:role/TaskMaster-EBS-CSI-Driver-Role"
-```
-
-### Step 2: Deploy Storage Class
-
-```bash
-# Deploy the GP3 storage class
 kubectl apply -f storageclass-gp3.yaml
 ```
-
-### Step 3: Configure Monitoring Values
-
+3. Configure Values File
 ```bash
-# Copy the template to create your values file
+# Copy template
 cp values-monitoring-template.yaml values-monitoring.yaml
-
-# Edit the values file to customize:
-# - Grafana admin password (CHANGE_ME_TO_SECURE_PASSWORD)
-# - Slack webhook URLs for alerting
-# - External labels for your environment
-# - Resource limits based on your cluster size
+```
+# Edit and update:
+# - Grafana admin password
+# - Slack webhook URL (optional)
+# - Resource limits (based on your node capacity)
+```bash
 vim values-monitoring.yaml
 ```
-
-### Step 4: Deploy Monitoring Stack
-
+4. Install Monitoring Stack
 ```bash
-# Add Prometheus community Helm repository
+# Add Helm repository
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
-
-# Create monitoring namespace (if not exists)
-kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
-
-# Install kube-prometheus-stack
-helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
+```
+# Install the stack
+```bash
+helm install monitoring prometheus-community/kube-prometheus-stack \
   --namespace monitoring \
-  --values values-monitoring.yaml \
-  --wait
+  --create-namespace \
+  --values values-monitoring.yaml
 ```
 
-### Step 5: Verify Deployment
-
+# Watch installation
 ```bash
+kubectl get pods -n monitoring --watch
+Accessing Components
+Prometheus
+```
+# Port-forward
+kubectl port-forward -n monitoring svc/monitoring-kube-prometheus-prometheus 9090:9090
+
+# Access: http://localhost:9090
+Grafana
+bash
+# Port-forward
+kubectl port-forward -n monitoring svc/monitoring-grafana 3000:80
+
+# Access: http://localhost:3000
+# Username: admin
+# Password: (from values-monitoring.yaml)
+Alertmanager
+bash
+# Port-forward
+kubectl port-forward -n monitoring svc/monitoring-kube-prometheus-alertmanager 9093:9093
+
+# Access: http://localhost:9093
+Verification
+bash
 # Check all pods are running
 kubectl get pods -n monitoring
 
-# Check services
-kubectl get svc -n monitoring
-
-# Check persistent volumes
-kubectl get pvc -n monitoring
-```
-
-## 🔗 Accessing Monitoring Services
-
-### Grafana (Visualization)
-```bash
-# Port forward Grafana to localhost
-kubectl port-forward -n monitoring svc/monitoring-grafana 3000:80
-
-# Access at: http://localhost:3000
-# Default credentials:
-# Username: admin
-# Password: AdminPassword123! (or your configured password)
-```
-
-### Prometheus (Metrics)
-```bash
-# Port forward Prometheus to localhost
-kubectl port-forward -n monitoring svc/monitoring-kube-prometheus-prometheus 9090:9090
-
-# Access at: http://localhost:9090
-```
-
-### AlertManager (Alerting)
-```bash
-# Port forward AlertManager to localhost
-kubectl port-forward -n monitoring svc/monitoring-kube-prometheus-alertmanager 9093:9093
-
-# Access at: http://localhost:9093
-```
-
-## 📈 Default Dashboards
-
-The monitoring stack comes pre-configured with several useful dashboards:
-
-### Grafana Dashboards
-1. **Kubernetes Cluster Monitoring** (ID: 7249)
-   - Cluster overview with nodes, pods, and resource usage
-   - API server metrics and etcd performance
-
-2. **Node Exporter Full** (ID: 1860)
-   - Detailed node metrics including CPU, memory, disk, and network
-   - System-level monitoring for all cluster nodes
-
-3. **Persistent Volumes** (ID: 13646)
-   - Storage usage and performance metrics
-   - Volume status and capacity monitoring
-
-### Accessing Dashboards
-1. Open Grafana at http://localhost:3000
-2. Login with admin credentials
-3. Navigate to the "Default" folder in the left sidebar
-4. Click on any dashboard to view metrics
-
-## 🔔 Alerting Configuration
-
-### Pre-configured Alerts
-- **Node Down**: Triggers when a node becomes unreachable
-- **Pod Crash**: Alerts on frequent pod restarts
-- **High CPU/Memory Usage**: Resource utilization thresholds
-- **Storage Issues**: Disk space and volume problems
-- **Kubernetes API Issues**: Control plane availability
-
-### Alert Routing
-Alerts are configured to route through different channels:
-- **Critical**: Immediate notification (Slack integration ready)
-- **Warning**: Warning-level alerts (Slack integration ready)
-- **Default**: Fallback routing
-
-### Configuring Slack Integration
-1. Create Slack webhook URLs for your channels
-2. Update `values-monitoring.yaml`:
-```yaml
-alertmanager:
-  config:
-    global:
-      slack_api_url: 'https://hooks.slack.com/services/YOUR/WEBHOOK/URL'
-    receivers:
-    - name: 'slack-critical'
-      slack_configs:
-      - channel: '#critical-alerts'
-        title: 'Critical Alert'
-        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
-```
-
-## ⚙️ Configuration Customization
-
-### Scaling for Production
-Adjust resource requests/limits in `values-monitoring.yaml`:
-
-```yaml
-prometheus:
-  prometheusSpec:
-    resources:
-      requests:
-        cpu: 1000m  # Increase for larger clusters
-        memory: 4Gi
-      limits:
-        cpu: 2000m
-        memory: 8Gi
-
-grafana:
-  resources:
-    requests:
-      cpu: 500m
-      memory: 1Gi
-    limits:
-      cpu: 1000m
-      memory: 2Gi
-```
-
-### Retention Settings
-```yaml
-prometheus:
-  prometheusSpec:
-    retention: 30d  # Increase for longer data retention
-    retentionSize: "50GB"
-```
-
-### High Availability
-For production clusters with multiple nodes:
-```yaml
-prometheus:
-  prometheusSpec:
-    replicas: 2
-
-alertmanager:
-  alertmanagerSpec:
-    replicas: 2
-```
-
-## 🔧 Troubleshooting
-
-### Common Issues
-
-#### Persistent Volume Issues
-```bash
-# Check PVC status
+# Check PVCs are bound
 kubectl get pvc -n monitoring
 
-# Check PV status
-kubectl get pv
-
-# Check EBS CSI driver logs
-kubectl logs -n kube-system deployment/aws-ebs-csi-driver
-```
-
-#### Grafana Login Issues
-```bash
-# Reset Grafana admin password
-kubectl exec -n monitoring deployment/monitoring-grafana -- grafana-cli admin reset-admin-password YOUR_NEW_PASSWORD
-```
-
-#### Prometheus Not Scraping Metrics
-```bash
 # Check Prometheus targets
-kubectl port-forward -n monitoring svc/monitoring-kube-prometheus-prometheus 9090:9090
-# Visit http://localhost:9090/targets
-```
+# Visit: http://localhost:9090/targets (after port-forward)
 
-#### High Resource Usage
-```bash
-# Check resource usage
-kubectl top pods -n monitoring
-kubectl top nodes
+# Check Grafana data source
+# Grafana UI → Configuration → Data Sources → Prometheus
+Configuration Files
+File	Description	Commit to Git?
+values-monitoring-template.yaml	Template with placeholders	✅ Yes
+values-monitoring.yaml	Actual config with secrets	❌ No (.gitignore)
+storageclass-gp3.yaml	EBS gp3 StorageClass	✅ Yes
+README.md	This file	✅ Yes
+Cost Estimation
+EBS Volumes (7 days):
 
-# Adjust resource limits in values-monitoring.yaml and redeploy
-helm upgrade monitoring prometheus-community/kube-prometheus-stack -n monitoring -f values-monitoring.yaml
-```
+Prometheus: 20 GiB × $0.08/GB/month × (7/30) = $0.37
 
-## 🧹 Cleanup
+Grafana: 5 GiB × $0.08/GB/month × (7/30) = $0.09
 
-To remove the monitoring stack:
+Alertmanager: 5 GiB × $0.08/GB/month × (7/30) = $0.09
 
-```bash
-# Uninstall Helm release
+Total storage cost: ~$0.55 for 1 week
+
+Troubleshooting
+PVC Pending
+Issue: PVC stuck in Pending state
+
+Solution:
+
+bash
+# Check if StorageClass exists
+kubectl get storageclass
+
+# Check EBS CSI driver is running
+kubectl get pods -n kube-system | grep ebs-csi
+
+# Check PVC events
+kubectl describe pvc <pvc-name> -n monitoring
+Pod CrashLoopBackOff
+Issue: Prometheus/Grafana pods crashing
+
+Solution:
+
+bash
+# Check pod logs
+kubectl logs -n monitoring <pod-name>
+
+# Check resource constraints
+kubectl describe node
+No Metrics in Grafana
+Issue: Grafana shows "No data"
+
+Solution:
+
+bash
+# Verify Prometheus is scraping
+# Prometheus UI → Status → Targets (all should be UP)
+
+# Check Grafana data source connection
+# Grafana → Configuration → Data Sources → Prometheus → Test
+Maintenance
+Upgrade Monitoring Stack
+bash
+helm upgrade monitoring prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --values values-monitoring.yaml
+Backup Grafana Dashboards
+bash
+# Export dashboards via Grafana UI
+# Dashboards → Manage → Export → Save JSON
+
+# Or backup the entire PVC
+kubectl exec -n monitoring monitoring-grafana-xxx -- tar czf /tmp/grafana-backup.tar.gz /var/lib/grafana
+kubectl cp monitoring/monitoring-grafana-xxx:/tmp/grafana-backup.tar.gz ./grafana-backup.tar.gz
+Uninstall
+bash
+# Delete Helm release
 helm uninstall monitoring -n monitoring
 
-# Remove namespace
+# Delete PVCs (if you want to remove data)
+kubectl delete pvc -n monitoring --all
+
+# Delete namespace
 kubectl delete namespace monitoring
 
-# Remove storage class (optional)
-kubectl delete -f storageclass-gp3.yaml
 
-# Remove IAM resources (optional)
-aws iam detach-role-policy --role-name TaskMaster-EBS-CSI-Driver-Role --policy-arn arn:aws:iam::YOUR_ACCOUNT_ID:policy/TaskMaster-EBS-CSI-Driver-Policy
-aws iam delete-role --role-name TaskMaster-EBS-CSI-Driver-Role
-aws iam delete-policy --policy-arn arn:aws:iam::YOUR_ACCOUNT_ID:policy/TaskMaster-EBS-CSI-Driver-Policy
+Interview Talking Points
+```text
+Q: Why kube-prometheus-stack instead of standalone Prometheus?
+
+"kube-prometheus-stack is a curated collection that includes Prometheus, Grafana, Alertmanager, and essential exporters pre-configured to work together. It uses the Prometheus Operator pattern, which allows me to define monitoring configurations as Kubernetes CRDs (ServiceMonitors, PodMonitors). This is much more maintainable than manually editing Prometheus config files—it's declarative and follows GitOps principles."
 ```
 
-## 📚 Additional Resources
+```text
+Q: How do you handle Prometheus data retention?
 
-- [kube-prometheus-stack Documentation](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)
-- [Prometheus Documentation](https://prometheus.io/docs/)
-- [Grafana Documentation](https://grafana.com/docs/)
-- [AlertManager Documentation](https://prometheus.io/docs/alerting/latest/alertmanager/)
-- [AWS EBS CSI Driver](https://github.com/kubernetes-sigs/aws-ebs-csi-driver)
+"I set retention to 15 days with a 10GB size limit. For long-term storage in production, I'd use Thanos or Cortex for federated storage with S3 backend. Thanos gives me unlimited retention, multi-cluster querying, and downsampling for cost efficiency. But for this project, 15 days is sufficient for troubleshooting and demonstrating monitoring capabilities."
+```
 
-## ❓ Questions?
+```text
+Q: How do you monitor the monitoring stack itself?
 
-If you have any questions about the monitoring setup or need assistance with configuration, please check:
+"Meta-monitoring is critical. The stack includes self-monitoring via default rules—Prometheus monitors itself, Alertmanager monitors Prometheus, etc. I have alerts for Prometheus scrape failures, Alertmanager notification failures, and high resource usage. I'd also set up an external uptime monitor (like UptimeRobot) to ping Prometheus from outside the cluster."
+```
 
-1. The troubleshooting section above
-2. Kubernetes logs for specific components
-3. Prometheus/AlertManager configuration validation
-4. AWS IAM and EBS permissions
+Resources:
 
----
+kube-prometheus-stack Chart
 
-**Note**: This monitoring stack is configured for the TaskMaster application running on AWS EKS. Adjust resource limits and retention settings based on your cluster size and monitoring requirements.
+Prometheus Documentation
+
+Grafana Documentation
+
+PromQL Query Examples
+
+AWS EBS CSI Driver
+
+Next Steps:
+
+ Configure Slack alerts (Part 4 - Alert Rules)
+
+ Create custom application dashboards
+
+ Set up recording rules for complex queries
+
+ Implement ServiceMonitor for backend API
+
+ Configure alert inhibition rules
+
+ Set up Grafana OnCall for on-call rotation
+
