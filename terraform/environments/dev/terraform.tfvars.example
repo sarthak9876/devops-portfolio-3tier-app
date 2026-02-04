@@ -25,9 +25,9 @@ cluster_version = "1.32"  # Use standard support version
 
 # Nodes
 instance_types = ["m7i-flex.large"]
-desired_size   = 3
-min_size       = 3
-max_size       = 5
+eks_desired_capacity   = 3
+eks_min_size       = 3
+eks_max_size       = 5
 disk_size      = 50
 
 # Tags

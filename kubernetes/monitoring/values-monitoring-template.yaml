@@ -1,0 +1,271 @@
+# ═══════════════════════════════════════════════════════════
+# KUBE-PROMETHEUS-STACK CUSTOM VALUES - TEMPLATE
+# Copy this file to values-monitoring.yaml and update secrets
+# ═══════════════════════════════════════════════════════════
+
+# ═══════════════════════════════════════════════════════════
+# GLOBAL SETTINGS
+# ═══════════════════════════════════════════════════════════
+global:
+  rbac:
+    create: true
+
+# ═══════════════════════════════════════════════════════════
+# PROMETHEUS CONFIGURATION
+# ═══════════════════════════════════════════════════════════
+prometheus:
+  enabled: true
+  
+  prometheusSpec:
+    retention: 15d
+    retentionSize: "10GB"
+    
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+    
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          storageClassName: gp3
+          resources:
+            requests:
+              storage: 20Gi
+    
+    scrapeInterval: 30s
+    scrapeTimeout: 10s
+    evaluationInterval: 30s
+    
+    podMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    
+    externalLabels:
+      cluster: taskmaster-eks
+      environment: dev
+      region: us-east-1
+
+# ═══════════════════════════════════════════════════════════
+# ALERTMANAGER CONFIGURATION
+# ═══════════════════════════════════════════════════════════
+alertmanager:
+  enabled: true
+  
+  alertmanagerSpec:
+    replicas: 1
+    
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+    
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: gp3
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 5Gi
+  
+  config:
+    global:
+      resolve_timeout: 5m
+      # TODO: Add Slack webhook URL here
+      # slack_api_url: 'https://hooks.slack.com/services/YOUR/WEBHOOK/URL'
+    
+    route:
+      group_by: ['alertname', 'namespace', 'pod']
+      group_wait: 10s
+      group_interval: 5m
+      repeat_interval: 12h
+      receiver: 'null'
+      
+      routes:
+      - match:
+          severity: critical
+        receiver: 'slack-critical'
+        continue: true
+      
+      - match:
+          severity: warning
+        receiver: 'slack-warnings'
+        continue: true
+    
+    receivers:
+    - name: 'null'
+    
+    - name: 'slack-critical'
+      # TODO: Add Slack config here
+      # slack_configs:
+      # - channel: '#critical-alerts'
+      #   title: 'Critical Alert'
+      #   text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+    
+    - name: 'slack-warnings'
+      # TODO: Add Slack config here
+      # slack_configs:
+      # - channel: '#warnings'
+      #   title: 'Warning Alert'
+      #   text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+
+# ═══════════════════════════════════════════════════════════
+# GRAFANA CONFIGURATION
+# ═══════════════════════════════════════════════════════════
+grafana:
+  enabled: true
+  
+  # TODO: Change this password!
+  adminPassword: "CHANGE_ME_TO_SECURE_PASSWORD"
+  
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  
+  persistence:
+    enabled: true
+    storageClassName: gp3
+    size: 5Gi
+  
+  grafana.ini:
+    server:
+      root_url: "http://localhost:3000"
+    
+    auth.anonymous:
+      enabled: false
+    
+    security:
+      admin_user: admin
+  
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+      - name: Prometheus
+        type: prometheus
+        url: http://monitoring-kube-prometheus-prometheus:9090
+        access: proxy
+        isDefault: true
+        jsonData:
+          timeInterval: 30s
+  
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/default
+  
+  dashboards:
+    default:
+      kubernetes-cluster:
+        gnetId: 7249
+        revision: 1
+        datasource: Prometheus
+      
+      node-exporter:
+        gnetId: 1860
+        revision: 31
+        datasource: Prometheus
+      
+      persistent-volumes:
+        gnetId: 13646
+        revision: 2
+        datasource: Prometheus
+
+# ═══════════════════════════════════════════════════════════
+# KUBE-STATE-METRICS CONFIGURATION
+# ═══════════════════════════════════════════════════════════
+kube-state-metrics:
+  enabled: true
+  
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+# ═══════════════════════════════════════════════════════════
+# NODE-EXPORTER CONFIGURATION
+# ═══════════════════════════════════════════════════════════
+prometheus-node-exporter:
+  enabled: true
+  
+  resources:
+    requests:
+      cpu: 50m
+      memory: 30Mi
+    limits:
+      cpu: 200m
+      memory: 100Mi
+  
+  hostNetwork: true
+  hostPID: true
+
+# ═══════════════════════════════════════════════════════════
+# PROMETHEUS OPERATOR CONFIGURATION
+# ═══════════════════════════════════════════════════════════
+prometheusOperator:
+  enabled: true
+  
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  
+  createCustomResource: true
+
+# ═══════════════════════════════════════════════════════════
+# DEFAULT RULES
+# ═══════════════════════════════════════════════════════════
+defaultRules:
+  create: true
+  rules:
+    alertmanager: true
+    etcd: false
+    configReloaders: true
+    general: true
+    k8s: true
+    kubeApiserverAvailability: true
+    kubeApiserverSlos: true
+    kubeControllerManager: false
+    kubelet: true
+    kubeProxy: true
+    kubePrometheusGeneral: true
+    kubePrometheusNodeRecording: true
+    kubernetesApps: true
+    kubernetesResources: true
+    kubernetesStorage: true
+    kubernetesSystem: true
+    kubeScheduler: false
+    kubeStateMetrics: true
+    network: true
+    node: true
+    nodeExporterAlerting: true
+    nodeExporterRecording: true
+    prometheus: true
+    prometheusOperator: true
+

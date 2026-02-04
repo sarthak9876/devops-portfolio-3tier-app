@@ -31,7 +31,7 @@ check_command() {
                 version=$(docker --version | awk '{print $3}' | tr -d ',')
                 ;;
             kubectl)
-                version=$(kubectl version --client --short 2>/dev/null | awk '{print $3}')
+                version=$(kubectl version --client 2>/dev/null | head -1 | awk '{print $3}')
                 ;;
             helm)
                 version=$(helm version --short | awk '{print $1}')

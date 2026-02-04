@@ -49,19 +49,19 @@ echo -e "${YELLOW}6. Deploying MongoDB...${NC}"
 kubectl apply -f manifests/03-mongodb-deployment.yml
 echo "Waiting for MongoDB to be ready..."
 kubectl wait --for=condition=ready pod -l app=mongodb --timeout=120s
-echo -e "${GREEN}✅ MongoDB Reay.${NC}"
+echo -e "${GREEN}✅ MongoDB Redy.${NC}"
 echo ""
 
 echo -e "${YELLOW}7. Deploying backend...${NC}"
 envsubst < manifests/04-backend-deployment.yml | kubectl apply -f -
-echo -e  "Waiting for Backend dpeloyment...${NC}"
-kubectl wait --for=condition=ready pod -l app=backend --timeout=120s
-echo -e "${GREEN}✅  Bacend Ready${NC}"
+echo -e  "Waiting for Backend deployment...${NC}"
+kubectl wait --for=condition=ready pod -l app=backend --timeout=180s
+echo -e "${GREEN}✅  Bckend Ready${NC}"
 echo ""
 
 echo -e "${YELLOW}8. Deploying frontend...${NC}"
 envsubst < manifests/05-frontend-deployment.yml | kubectl apply -f -
-echo -e "Waiting for Frontend dpeloyment...${NC}"
+echo -e "Waiting for Frontend Deployment...${NC}"
 kubectl wait --for=condition=ready pod -l app=frontend --timeout=120s
 echo -e "${GREEN}✅ Frontend Ready${NC}"
 echo ""

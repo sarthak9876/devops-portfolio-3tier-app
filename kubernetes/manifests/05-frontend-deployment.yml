@@ -33,7 +33,7 @@ spec:
       - name: frontend
         # ⚠️  UPDATE THIS WITH YOUR ECR IMAGE URI
         # Make sure to rebuild and push the frontend image after nginx.conf changes
-        image: 364218291713.dkr.ecr.us-east-1.amazonaws.com/taskmaster-frontend:latest
+        image: 333600347568.dkr.ecr.us-east-1.amazonaws.com/taskmaster-frontend:latest
         imagePullPolicy: Always
         
         ports:

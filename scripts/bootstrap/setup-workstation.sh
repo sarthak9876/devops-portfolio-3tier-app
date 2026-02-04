@@ -23,7 +23,7 @@ readonly LOG_FILE="${LOG_DIR}/bootstrap-$(date +%Y%m%d-%H%M%S).log"
 # Versions (update these as needed)
 readonly KUBECTL_VERSION="1.30.0"
 readonly HELM_VERSION="3.14.0"
-readonly TERRAFORM_VERSION="1.7.0"
+readonly TERRAFORM_VERSION="1.14.4"
 readonly NODE_VERSION="20"
 readonly DOCKER_COMPOSE_VERSION="2.24.5"
 

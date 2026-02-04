@@ -1,0 +1,192 @@
+USER-SUPPLIED VALUES:
+alertManager:
+  alertManagerSpec:
+    replicas: 1
+    resources:
+      limits:
+        cpu: 300m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+    storage:
+      volumeClaimTemplate:
+        accessModes:
+        - ReadWriteOnly
+        resource:
+          requests:
+            storage: 5Gi
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      group_by:
+      - alertname
+      - namespace
+      - pod
+      group_interval: 5m
+      group_wait: 10s
+      receiver: "null"
+      receivers:
+      - name: null
+      - name: slack-critical
+      - name: slack-warning
+      repeat_interval: 5m
+      routes:
+      - continue: true
+        match:
+          severity: critical
+        receiver: slack-critical
+      - continue: true
+        match:
+          severity: warning
+        receiver: slack-warning
+  enabled: true
+defaultRules:
+  create: true
+  rules:
+    alertmanager: true
+    configReloaders: true
+    etcd: false
+    general: true
+    k8s: true
+    kubeApiserverAvailability: true
+    kubeApiserverSlos: true
+    kubeControllerManager: false
+    kubePrometheusGeneral: true
+    kubePrometheusNodeRecording: true
+    kubeProxy: true
+    kubeScheduler: false
+    kubeStateMetrics: true
+    kubelet: true
+    kubernetesApps: true
+    kubernetesResources: true
+    kubernetesStorage: true
+    kubernetesSystem: true
+    network: true
+    node: true
+    nodeExporterAlerting: true
+    nodeExporterRecording: true
+    prometheus: true
+    prometheusOperator: true
+global:
+  rbac:
+    create: true
+grafana:
+  adminPassword: AdminPassword123!
+  dashboardProviders:
+    dashoardproviders.yaml:
+      apiVersion: 1
+      providers:
+      - disableDeletion: false
+        editable: true
+        folder: ""
+        name: default
+        options:
+          path: /var/lib/grafana/dashboards/default
+        orgId: 1
+        type: file
+  dashboards:
+    default:
+      kubernetes-cluster:
+        datasource: Prometheus
+        gnetId: 7249
+        revision: 1
+      node-exporter:
+        datasource: Prometheus
+        gnetId: 1860
+        revision: 31
+      persistent-volumes:
+        datasource: Prometheus
+        gnetId: 13646
+        revision: 2
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+      - access: proxy
+        isDefault: true
+        jsonData:
+          timeInterval: 30s
+        name: Prometheus
+        type: Prometheus
+        url: http://monitoring-kube-prometheus-prometheus:9090
+  enabled: true
+  grafana.ini:
+    auth.anonymous:
+      enabled: false
+    security:
+      admin_user: admin
+    server:
+      root_url: http://localhost:3000
+  persistence:
+    enabled: true
+    size: 5Gi
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+kube-state-metrics:
+  enabled: true
+  resoruces:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 10m
+      memory: 32Mi
+prometheus:
+  enabled: true
+  prometheusSpec:
+    additionalScrapeConfigs: []
+    evaluationInterval: 30s
+    externalLabels:
+      cluster: taskmaster-eks
+      environment: dev
+      region: us-east-1
+    podMonitorSelectorNilUsesHelmValues: false
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+      requests:
+        cpu: 500m
+        memory: 1Gi
+    retention: 15d
+    retentionSize: 10GB
+    ruleSelectorNilUsesHelmValues: false
+    scrapeInterval: 30s
+    scrapeTimeout: 10s
+    serviceMonitorSelectorNilUsesHelmValues: false
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+          - ReadWriteOnce
+          resoruces:
+            requests:
+              storage: 20Gi
+prometheus-node-exporter:
+  enabled: true
+  hostNetwork: true
+  hostPID: true
+  resources:
+    limits:
+      cpu: 200m
+      memory: 100Mi
+    requests:
+      cpu: 50m
+      memory: 30Mi
+prometheusoperator:
+  createCustomResource: true
+  enabled: true
+  resources:
+    limits:
+      cpu: 400m
+      memopry: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi

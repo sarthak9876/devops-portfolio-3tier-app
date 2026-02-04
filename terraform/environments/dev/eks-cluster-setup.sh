@@ -41,12 +41,12 @@ aws ecr get-login-password --region "$AWS_REGION" \
 
 echo "9. Build and push images of existing app to ECR"
 # Frontend
-docker build -t taskmaster-frontend:latest ./application/frontend
+docker build -t taskmaster-frontend:latest ../../../application/frontend
 docker tag taskmaster-frontend:latest "$FRONTEND_REPO:latest"
 docker push "$FRONTEND_REPO:latest"
 
 # Backend
-docker build -t taskmaster-backend:latest ./application/backend
+docker build -t taskmaster-backend:latest ../../../application/backend
 docker tag taskmaster-backend:latest "$BACKEND_REPO:latest"
 docker push "$BACKEND_REPO:latest"
 

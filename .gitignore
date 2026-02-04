@@ -1,163 +1,218 @@
-# Terraform
-**/.terraform/*
-*.tfstate
-*.tfstate.*
-*.tfvars
-!terraform/environments/**/terraform.tfvars.example
-crash.log
-override.tf
-override.tf.json
-*_override.tf
-*_override.tf.json
-.gitignore.bkp
-# Ansible
-*.retry
-ansible.log
+# ═══════════════════════════════════════════════════════════════
+# CRITICAL SECURITY - NEVER COMMIT THESE FILES
+# ═══════════════════════════════════════════════════════════════
 
-# Kubernetes
-**/kubeconfig
-**/kube-config
-
-# AWS
-.aws/
+# AWS Credentials
+**/.aws/
+**/credentials
+**/config
 *.pem
 *.key
+*-key.json
+aws-credentials.txt
 
-# Secrets (NEVER commit these!)
-**/secrets.yaml
-**/secret-*.yaml
-**/.env
-**/.env.*
+# SSH Keys
+id_rsa
+id_rsa.pub
+*.ppk
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# Kubernetes Secrets (actual secret files, not templates)
+**/02-secret.yaml
+**/secrets/
+**/*-secret.yaml
+!**/*-secret-template.yaml
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
-
-# Backup files
-*.backup
-*.bak
-
-# Environment files (contain secrets)
+# Environment files with secrets
 .env
 .env.local
-.env.development
-.env.staging
+.env.*.local
 .env.production
+**/.env
+
+# Helm values files with secrets (allow templates)
+**/values-secrets.yaml
+**/values-production.yaml
+!**/values-production-template.yaml
+
+# Terraform sensitive files
+*.tfstate
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+*.auto.tfvars
+**/override.tf
+**/override.tf.json
+
+# IAM policy documents (may contain account IDs)
+trust-policy.json
+trust-policy-fixed.json
+ebs-csi-driver-policy.json
+iam-oidc-policy.json
+
+# Backup files (may contain old secrets)
+*.bak
+*.backup
+*-backup.*
+*.old
+
+# Certificate files
+*.crt
+*.csr
+*.der
+*.p12
+*.pfx
+
+# ═══════════════════════════════════════════════════════════════
+# APPLICATION DEPENDENCIES
+# ═══════════════════════════════════════════════════════════════
 
 # Node.js
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.npm
-.yarn-integrity
+package-lock.json
+yarn.lock
 
-# Build outputs
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Java
+target/
+*.class
+*.jar
+*.war
+
+# Go
+vendor/
+*.exe
+*.test
+*.out
+
+# ═══════════════════════════════════════════════════════════════
+# BUILD ARTIFACTS
+# ═══════════════════════════════════════════════════════════════
+
+# Frontend build
 dist/
 build/
 .next/
-.nuxt/
-.cache/
-.parcel-cache/
+out/
 
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage directory used by tools like istanbul
-coverage/
-*.lcov
-
-# Dependency directories
-jspm_packages/
-
-# Optional npm cache directory
-.npm
-
-# Optional REPL history
-.node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# dotenv environment variables file
-.env.local
-
-# parcel-bundler cache (https://parceljs.org/)
-.cache
-.parcel-cache
-
-# next.js build output
-.next
-
-# nuxt.js build output
-.nuxt
-
-# vuepress build output
-.vuepress/dist
-
-# Serverless directories
-.serverless
-
-# FuseBox cache
-.fusebox/
-
-# DynamoDB Local files
-.dynamodb/
+# Logs
+*.log
+logs/
+*.log.*
 
 # Docker
-.dockerignore
+**/.dockerignore
 
-# Temporary files
+# ═══════════════════════════════════════════════════════════════
+# IDE & EDITOR FILES
+# ═══════════════════════════════════════════════════════════════
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Vim
+*.swp
+*.swo
+*.swn
+*~
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ═══════════════════════════════════════════════════════════════
+# OPERATING SYSTEM FILES
+# ═══════════════════════════════════════════════════════════════
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+.directory
+.Trash-*
+
+# ═══════════════════════════════════════════════════════════════
+# TEMPORARY FILES
+# ═══════════════════════════════════════════════════════════════
+
 *.tmp
 *.temp
+temp/
+tmp/
+.cache/
 
-# Application specific
-# React build
-application/frontend/build/
-application/frontend/dist/
+# ═══════════════════════════════════════════════════════════════
+# KUBERNETES & HELM
+# ═══════════════════════════════════════════════════════════════
 
-# Backend build/dist
-application/backend/dist/
-application/backend/build/
+# Helm charts downloaded
+charts/*.tgz
 
-# Database files
-*.db
-*.sqlite
-*.sqlite3
+# Kubeconfig files
+kubeconfig
+kubeconfig.*
+config-*
 
-# Certificates and keys
-*.crt
-*.pem
-*.key
-*.p12
-*.pfx
+# ═══════════════════════════════════════════════════════════════
+# MONITORING & OBSERVABILITY
+# ═══════════════════════════════════════════════════════════════
 
-# SSH keys
-id_rsa
-id_rsa.pub
-ssh_config
+# Prometheus data
+prometheus-data/
 
-# API keys and tokens
-api_keys.json
-tokens.json
-kubernetes/manifests/02-secret.yaml
-.env.k8s
-terraform/modules/compute/user_data.sh.bkp
-kubernetes/set-mongo-env.sh
-kubernetes/manifests/05-frontend-deployment.yml.bkp
+# Grafana data
+grafana-data/
+
+# Logs
+elasticsearch-data/
+logstash-data/
+
+# ═══════════════════════════════════════════════════════════════
+# PROJECT-SPECIFIC
+# ═══════════════════════════════════════════════════════════════
+
+# Verification scripts (contain account IDs)
+verify-*.sh
+
+# AWS CLI output files
+describe-*.json
+list-*.json
+
+# Test files
+test-output/
+coverage/
+
+kubernetes/manifests/02-secrets.yml
+02-secrets.yml
