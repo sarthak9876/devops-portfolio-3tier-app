@@ -1,0 +1,38 @@
+# ═══════════════════════════════════════════════════════
+# TERRAFORM VARIABLES TEMPLATE
+# Copy this file to terraform.tfvars and customize
+# ═══════════════════════════════════════════════════════
+
+# Project
+project_name = "your-project-name"
+environment  = "dev"
+owner        = "your-name"
+github_repo="your-repo-url"
+ssh_public_key_path = "~/.ssh/id_rsa.pub"
+
+# AWS
+aws_region         = "us-east-1"
+availability_zones = ["us-east-1a", "us-east-1b"]
+
+# VPC
+vpc_cidr             = "10.0.0.0/16"
+public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnet_cidrs = ["10.0.11.0/24", "10.0.12.0/24"]
+
+# EKS
+cluster_name    = "your-cluster-name"
+cluster_version = "1.32"  # Use standard support version
+
+# Nodes
+instance_types = ["m7i-flex.large"]
+desired_size   = 3
+min_size       = 3
+max_size       = 5
+disk_size      = 50
+
+# Tags
+tags = {
+  Project     = "YourProject"
+  Environment = "Development"
+  ManagedBy   = "Terraform"
+}
