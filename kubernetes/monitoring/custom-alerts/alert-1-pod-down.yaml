@@ -1,0 +1,111 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: taskmaster-pod-alerts
+  namespace: monitoring
+  labels:
+    prometheus: kube-prometheus
+    role: alert-rules
+spec:
+  groups:
+  - name: taskmaster.pod.rules
+    interval: 30s
+    rules:
+    # Alert 1a: Pod is not running
+    - alert: PodNotRunning
+      expr: |
+        kube_pod_status_phase{namespace="taskmaster-dev", phase!="Running"} == 1
+      for: 2m
+      labels:
+        severity: critical
+        team: platform
+        component: kubernetes
+        namespace: taskmaster-dev
+      annotations:
+        summary: "Pod {{ $labels.pod }} is not running"
+        description: |
+          Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is in phase {{ $labels.phase }}.
+          Current state has persisted for 2 minutes.
+          
+          Possible causes:
+          - ImagePullBackOff (check image name/tag)
+          - CrashLoopBackOff (check pod logs)
+          - Pending (check resource requests vs available capacity)
+          
+          Action: kubectl describe pod {{ $labels.pod }} -n {{ $labels.namespace }}
+        dashboard_url: "http://grafana.monitoring.svc:3000/d/pod-overview"
+
+    # Alert 1b: Pod restarting frequently
+    - alert: PodRestartFrequently
+      expr: |
+        rate(kube_pod_container_status_restarts_total{namespace="taskmaster-dev"}[15m]) > 0
+      for: 5m
+      labels:
+        severity: warning
+        team: platform
+        component: kubernetes
+        namespace: taskmaster-dev
+      annotations:
+        summary: "Pod {{ $labels.pod }} is restarting frequently"
+        description: |
+           Pod {{ $labels.pod }} container {{ $labels.container }} has restarted {{ $value | humanize }} times in the last 15 minutes.
+          
+           Common causes:
+           - Application crashes (check logs)
+           - OOMKilled (check memory limits)
+           - Liveness probe failing (check health endpoint)
+           - Unhandled exceptions
+           
+           Commands to debug:
+           1. Check recent restarts: kubectl get pod {{ $labels.pod }} -n {{ $labels.namespace }}
+           2. Check logs: kubectl logs {{ $labels.pod }} -n {{ $labels.namespace }} --previous
+           3. Check events: kubectl describe pod {{ $labels.pod }} -n {{ $labels.namespace }}
+        runbook_url: "https://github.com/your-org/runbooks/pod-crash-loop"
+    
+    # Alert 1c: Pod in CrashLoopBackOff state
+    - alert: PodCrashLooping
+      expr: |
+        kube_pod_container_status_waiting_reason{namespace="taskmaster-dev", reason="CrashLoopBackOff"} == 1
+      for: 1m
+      labels:
+        severity: critical
+        team: platform
+        component: kubernetes
+        namespace: taskmaster-dev
+      annotations:
+        summary: "Pod {{ $labels.pod }} is in CrashLoopBackOff"
+        description: |
+          Pod {{ $labels.pod }} container {{ $labels.container }} is crash looping.
+          This means the container starts, crashes, and Kubernetes keeps restarting it.
+          
+          Investigation steps:
+          1. Check container logs: kubectl logs {{ $labels.pod }} -n {{ $labels.namespace }} -c {{ $labels.container }}
+          2. Check previous container logs: kubectl logs {{ $labels.pod }} -n {{ $labels.namespace }} -c {{ $labels.container }} --previous
+          3. Check events: kubectl describe pod {{ $labels.pod }} -n {{ $labels.namespace }}
+          4. Check resource limits: Are we OOMKilled?
+          5. Check environment variables/secrets: Are they set correctly?
+        dashboard_url: "http://grafana.monitoring.svc:3000/d/pod-overview"
+
+    # Alert 1d: Container waiting too long (ImagePullBackOff, etc.)
+    - alert: ContainerWaiting
+      expr: |
+        kube_pod_container_status_waiting_reason{namespace="taskmaster-dev", reason!=""} == 1
+      for: 3m
+      labels:
+        severity: warning
+        team: platform
+        component: kubernetes
+        namespace: taskmster-dev
+      annotations:
+        summary: "Container {{ $labels.container }} in pod {{ $labels.pod }} is waiting"
+        description: |
+          Container {{ $labels.container }} in pod {{ $labels.pod }} is in waiting state.
+          Reason: {{ $labels.reason }}
+          
+          Common waiting reasons:
+          - ImagePullBackOff: Image doesn't exist or wrong credentials
+          - ErrImagePull: Network issue pulling image
+          - ContainerCreating: Stuck mounting volumes or pulling image
+          
+          Check: kubectl describe pod {{ $labels.pod }} -n {{ $labels.namespace }}
+

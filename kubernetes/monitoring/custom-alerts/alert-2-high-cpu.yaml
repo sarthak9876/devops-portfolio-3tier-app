@@ -1,0 +1,107 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: taskmaster-cpu-alerts
+  namespace: monitoring
+  labels:
+    prometheus: kube-prometheus
+    role: alert-rules
+spec:
+  groups:
+  - name: taskmaster.cpu.rules
+    interval: 30s
+    rules:
+    
+    # Alert 2a: Pod CPU usage high (warning)
+    - alert: PodCPUUsageHigh
+      expr: |
+        (
+          sum(rate(container_cpu_usage_seconds_total{namespace="taskmaster-dev", pod!="", container!=""}[5m])) by (pod, container)
+          /
+          sum(container_spec_cpu_quota{namespace="taskmaster-dev", pod!="", container!=""} / container_spec_cpu_period{namespace="taskmaster-dev", pod!="", contaienr!=""}) by (pod,container)
+          ) * 100 > 75
+      for: 10m
+      labels:
+        severity: warning
+        team: backend
+        component: resoruces
+        namespace: taskmaster-dev
+      annotations:
+        summary: "Pod {{ $labels.pod }} CPU usage is high"
+        description: |
+          Pod {{ $labels.pod }} container {{ $labels.container }} is using {{ $value | humanize }}% of its CPU limit.
+          
+          This is a WARNING alert. The pod is still functional but approaching capacity.
+          
+          Investigation:
+          1. Check pod metrics: kubectl top pod {{ $labels.pod }} -n {{ $labels.namespace }}
+          2. Check for CPU throttling: kubectl describe pod {{ $labels.pod }} -n {{ $labels.namespace }} | grep -i cpu
+          3. Review recent deployments: Did code changes cause this?
+          4. Check traffic patterns: Is this expected load?
+          
+          Actions:
+          - If legitimate traffic: Scale horizontally (increase replicas)
+          - If inefficient code: Profile and optimize
+          - If limits too low: Increase CPU limits
+        dashboard_url: "http://grafana.monitoring.svc:3000/d/pod-resources"
+    
+    # Alert 2b: Pod CPU usage critical
+    - alert: PodCPUUsageCritical
+      expr: |
+        (
+          sum(rate(container_cpu_usage_seconds_total{namespace="taskmaster-dev", pod!="", container!=""}[5m])) by (pod, container)
+          /
+          sum(container_spec_cpu_quota{namespace="taskmaster-dev", pod!="", container!=""} / container_spec_cpu_period{namespace="taskmaster-dev", pod!="", container!=""}) by (pod, container)
+        ) * 100 > 90
+      for: 5m
+      labels:
+        severity: critical
+        team: backend
+        component: resources
+        namespace: taskmaster-dev
+      annotations:
+        summary: "Pod {{ $labels.pod }} CPU usage is CRITICAL"
+        description: |
+          Pod {{ $labels.pod }} container {{ $labels.container }} is using {{ $value | humanize }}% of its CPU limit.
+          
+          ⚠️ CRITICAL: Pod is likely being CPU throttled, causing slow responses.
+          
+          Immediate actions:
+          1. Scale up immediately: kubectl scale deployment/<deployment-name> --replicas=5 -n {{ $labels.namespace }}
+          2. Check if pod is throttled: kubectl describe pod {{ $labels.pod }} -n {{ $labels.namespace }}
+          3. Monitor request latency in Grafana
+          
+          Root cause analysis (after mitigation):
+          - Profile CPU usage: kubectl exec -it {{ $labels.pod }} -n {{ $labels.namespace }} -- <profiler>
+          - Check for CPU-intensive operations (regex, JSON parsing, etc.)
+          - Review database query performance
+          - Check for blocking operations in hot paths
+        runbook_url: "https://github.com/your-org/runbooks/high-cpu"
+    
+    # Alert 2c: Node CPU usage high (affects all pods on node)
+    - alert: NodeCPUUsageHigh
+      expr: |
+        (
+          1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance)
+        ) * 100 > 80
+      for: 10m
+      labels:
+        severity: warning
+        team: platform
+        component: infrastructure
+      annotations:
+        summary: "Node {{ $labels.instance }} CPU usage is high"
+        description: |
+          Node {{ $labels.instance }} CPU usage is {{ $value | humanize }}%.
+          
+          This affects ALL pods on this node.
+          
+          Check:
+          1. Which pods are using CPU: kubectl top pods --all-namespaces --sort-by=cpu
+          2. Node capacity: kubectl describe node {{ $labels.instance }}
+          3. Consider:
+             - Scaling cluster (add nodes)
+             - Evicting non-critical pods
+             - Enabling pod disruption budgets
+        dashboard_url: "http://grafana.monitoring.svc:3000/d/node-overview"
+

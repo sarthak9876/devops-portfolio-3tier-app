@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cpu-stress
+  namespace: taskmaster-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cpu-stress
+  template:
+    metadata:
+      labels:
+        app: cpu-stress
+    spec:
+      containers:
+      - name: stress
+        image: containerstack/alpine-stress
+        # Alpine Linux with stress-ng pre-installed
+        
+        resources:
+          requests:
+            cpu: 100m        # Request 100 millicores (0.1 CPU)
+            memory: 128Mi
+          limits:
+            cpu: 500m        # Limit to 500 millicores (0.5 CPU)
+            memory: 256Mi
+        
+        command:
+        - stress-ng
+        args:
+        - --cpu
+        - "1"              # Use 1 CPU core
+        - --cpu-load
+        - "90"             # Load CPU to 90%
+        - --timeout
+        - "600s"           # Run for 10 minutes
+        - --metrics-brief  # Show brief metrics
+        
+        # This will max out the 500m CPU limit
+        # Alert threshold: 75% of limit = 375m
+        # This will use ~450m → Triggers alert!

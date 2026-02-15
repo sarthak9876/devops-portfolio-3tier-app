@@ -1,0 +1,249 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: taskmaster-error-alerts
+  namespace: monitoring
+  labels:
+    prometheus: kube-prometheus
+    role: alert-rules
+spec:
+  groups:
+  - name: taskmaster.error.rules
+    interval: 30s
+    rules:
+    
+    # Alert 5a: High 5xx error rate (absolute)
+    - alert: HighServerErrorRate
+      expr: |
+        # Calculate error rate as percentage
+        (
+          sum(rate(http_requests_total{namespace="taskmaster-dev", job="backend", status=~"5.."}[5m]))
+          /
+          sum(rate(http_requests_total{namespace="taskmaster-dev", job="backend"}[5m]))
+        ) * 100 > 5
+      
+      # Breakdown:
+      #
+      # 1. http_requests_total{status=~"5.."} 
+      #    - Regex match: status starts with "5" (500, 501, 502, 503, 504)
+      #    - Counter: increases each time a 5xx response is sent
+      #
+      # 2. rate(...[5m])
+      #    - Per-second rate over last 5 minutes
+      #    - Example: 100 errors in 5 min = 100/300s = 0.33 errors/sec
+      #
+      # 3. sum(rate(5xx)) / sum(rate(total))
+      #    - Numerator: 5xx errors per second
+      #    - Denominator: total requests per second
+      #    - Division: fraction of requests that error
+      #
+      # 4. * 100
+      #    - Convert to percentage
+      #
+      # 5. > 5
+      #    - Alert if more than 5% of requests error
+      #
+      # Example calculation:
+      # - 5xx rate: 5 errors/sec
+      # - Total rate: 100 requests/sec
+      # - Error rate: 5/100 * 100 = 5%
+      # - Just at threshold, alert is about to fire!
+      
+      for: 3m
+      labels:
+        severity: critical
+        team: backend
+        component: api
+        namespace: taskmaster-dev
+      annotations:
+        summary: "High 5xx error rate in backend API"
+        description: |
+          🚨 CRITICAL: {{ $value | humanizePercentage }} of requests are returning 5xx errors (threshold: 5%).
+          
+          This means {{ $value }}% of users are experiencing failures!
+          
+          5xx errors indicate server-side issues:
+          - Unhandled exceptions in code
+          - Database connection failures
+          - Dependency service outages
+          - Out of memory errors
+          - Timeouts
+          
+          IMMEDIATE ACTIONS:
+          
+          1. Check recent logs for errors:
+             kubectl logs -n taskmaster-dev -l app=backend --tail=100 | grep -i error
+          
+          2. Identify failing endpoints:
+             kubectl logs -n taskmaster-dev -l app=backend --tail=500 \
+               | jq 'select(.status >= 500) | {endpoint: .path, status: .status, error: .error}' \
+               | sort | uniq -c | sort -rn
+          
+          3. Check database connectivity:
+             kubectl exec -it <backend-pod> -n taskmaster-dev -- nc -zv mongodb-service 27017
+          
+          4. Check for exceptions:
+             kubectl logs -n taskmaster-dev -l app=backend | grep -i "exception\|error\|stack trace"
+          
+          5. Rollback if recent deployment:
+             kubectl rollout history deployment/backend -n taskmaster-dev
+             kubectl rollout undo deployment/backend -n taskmaster-dev
+          
+          6. Scale up if overload:
+             kubectl scale deployment/backend --replicas=5 -n taskmaster-dev
+          
+          POST-INCIDENT:
+          - Review error logs
+          - Add error handling (try/catch)
+          - Improve monitoring (detailed error tracking)
+          - Update runbook with learnings
+        
+        dashboard_url: "http://grafana.monitoring.svc:3000/d/api-errors"
+        runbook_url: "https://github.com/your-org/runbooks/high-error-rate"
+    
+    # Alert 5b: Error rate spike (relative increase)
+    - alert: ErrorRateSpike
+      expr: |
+        # Compare current error rate to 1 hour ago
+        (
+          sum(rate(http_requests_total{namespace="taskmaster-dev", status=~"5.."}[5m]))
+          /
+          sum(rate(http_requests_total{namespace="taskmaster-dev", status=~"5.."}[5m] offset 1h))
+        ) > 5
+        and
+        sum(rate(http_requests_total{namespace="taskmaster-dev", status=~"5.."}[5m])) > 0.1
+      
+      # Explanation:
+      #
+      # First condition:
+      # - Current 5xx rate / 5xx rate from 1 hour ago > 5
+      # - This means: errors increased by 5x (500%)
+      #
+      # Second condition (and):
+      # - sum(rate(...)) > 0.1
+      # - At least 0.1 errors per second (6 errors/min)
+      # - Prevents alert on low-volume noise
+      #
+      # Why both conditions?
+      # - Without second condition:
+      #   * 1 hour ago: 0.01 errors/sec (negligible)
+      #   * Now: 0.05 errors/sec (still negligible)
+      #   * Ratio: 5x increase → False alarm!
+      # - With second condition:
+      #   * Only alert if absolute error rate is meaningful
+      #
+      # Example that triggers alert:
+      # - 1 hour ago: 0.5 errors/sec (30/min)
+      # - Now: 3 errors/sec (180/min)
+      # - Ratio: 6x increase ✓
+      # - Absolute rate: 3/sec > 0.1 ✓
+      # - Alert fires!
+      
+      for: 2m
+      labels:
+        severity: critical
+        team: backend
+        component: api
+        namespace: taskmaster-dev
+      annotations:
+        summary: "Error rate suddenly increased by {{ $value }}x"
+        description: |
+          Error rate has increased {{ $value }}x compared to 1 hour ago.
+          
+          This sudden spike indicates:
+          - Recent deployment introduced bugs
+          - Dependency service degraded
+          - Database issues started
+          - Configuration change caused failures
+          
+          Check timeline:
+          1. When did errors start? (check Grafana)
+          2. What changed at that time?
+             - Code deployment?
+             - Config change?
+             - Database migration?
+             - Infrastructure change?
+          3. Correlate with other alerts (latency, CPU, memory)
+    
+    # Alert 5c: Specific status code spike (granular)
+    - alert: TooManyBadRequests
+      expr: |
+        sum(rate(http_requests_total{namespace="taskmaster-dev", status="400"}[5m])) by (endpoint) > 1
+      
+      # This alerts on 400 Bad Request errors
+      # > 1 means more than 1 per second (60/min)
+      #
+      # Why monitor 4xx?
+      # - Usually not urgent (client errors)
+      # - BUT: Spike in 400s can indicate:
+      #   * Frontend bug (sending bad data)
+      #   * API contract mismatch (frontend/backend out of sync)
+      #   * Malicious activity (probing/attacks)
+      #   * Validation logic too strict
+      
+      for: 5m
+      labels:
+        severity: warning
+        team: backend
+        component: api
+        namespace: taskmaster-dev
+      annotations:
+        summary: "High rate of 400 Bad Request errors on {{ $labels.endpoint }}"
+        description: |
+          Endpoint {{ $labels.endpoint }} is returning {{ $value | humanize }} 400 errors per second.
+          
+          Possible causes:
+          - Frontend sending invalid data
+          - API validation rules changed
+          - Required field missing
+          - Type mismatch (string instead of int)
+          
+          Check:
+          1. Recent frontend deployments
+          2. API validation logic changes
+          3. Error message in response: kubectl logs -n taskmaster-dev -l app=backend | grep "400"
+    
+    # Alert 5d: Zero traffic (service dead)
+    - alert: NoTrafficToAPI
+      expr: |
+        sum(rate(http_requests_total{namespace="taskmaster-dev", job="backend"}[5m])) == 0
+      
+      # Detects complete absence of traffic
+      # This is BAD because it means:
+      # - Service is down (crashed)
+      # - Service unreachable (network issue)
+      # - Metrics stopped being exported
+      #
+      # rate() over 5 min = 0 means NO requests in last 5 minutes
+      
+      for: 2m
+      labels:
+        severity: critical
+        team: backend
+        component: api
+        namespace: taskmaster-dev
+      annotations:
+        summary: "Backend API is receiving ZERO traffic"
+        description: |
+          🚨 CRITICAL: No HTTP requests detected for 2+ minutes.
+          
+          This indicates complete service failure!
+          
+          Check:
+          1. Are pods running?
+             kubectl get pods -n taskmaster-dev -l app=backend
+          
+          2. Are pods ready?
+             kubectl describe pods -n taskmaster-dev -l app=backend | grep -A 5 Conditions
+          
+          3. Is service configured correctly?
+             kubectl get svc backend-service -n taskmaster-dev
+             kubectl get endpoints backend-service -n taskmaster-dev
+          
+          4. Is frontend able to reach backend?
+             kubectl exec -it <frontend-pod> -n taskmaster-dev -- curl http://backend-service:5000/health
+          
+          5. Check recent changes:
+             - Was service accidentally deleted?
+             - Did deployment rollout fail?
+             - Network policy blocking traffic?

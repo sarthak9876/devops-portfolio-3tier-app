@@ -1,0 +1,343 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: taskmaster-mongodb-alerts
+  namespace: monitoring
+  labels:
+    prometheus: kube-prometheus
+    role: alert-rules
+spec:
+  groups:
+  - name: taskmaster.mongodb.rules
+    interval: 30s
+    rules:
+    
+    # Alert 6a: MongoDB pod not running
+    - alert: MongoDBPodDown
+      expr: |
+        kube_pod_status_phase{namespace="taskmaster-dev", pod=~"mongodb.*", phase="Running"} == 0
+      
+      # Explanation:
+      # - pod=~"mongodb.*" : Regex match, any pod starting with "mongodb"
+      # - phase="Running" : We're checking the Running phase
+      # - == 0 : Value is 0, meaning pod is NOT in Running phase
+      #
+      # How kube_pod_status_phase works:
+      # For each pod, kube-state-metrics exposes:
+      #   kube_pod_status_phase{pod="mongodb-abc", phase="Running"} = 1   (if Running)
+      #   kube_pod_status_phase{pod="mongodb-abc", phase="Running"} = 0   (if NOT Running)
+      #   kube_pod_status_phase{pod="mongodb-abc", phase="Pending"} = 1   (if Pending)
+      #   etc.
+      #
+      # So this query finds pods where Running=0, meaning pod is down!
+      
+      for: 1m
+      labels:
+        severity: critical
+        team: platform
+        component: database
+        namespace: taskmaster-dev
+      annotations:
+        summary: "MongoDB pod is not running"
+        description: |
+          🚨 CRITICAL: MongoDB pod {{ $labels.pod }} is not in Running state!
+          
+          This means the database is OFFLINE. All data operations will fail.
+          
+          Impact:
+          - Backend cannot read/write data
+          - Users cannot create/update/delete tasks
+          - API returns 500 errors for all database operations
+          
+          IMMEDIATE ACTIONS:
+          
+          1. Check pod status:
+             kubectl get pod {{ $labels.pod }} -n taskmaster-dev
+          
+          2. Check why pod is not running:
+             kubectl describe pod {{ $labels.pod }} -n taskmaster-dev
+          
+          3. Common causes:
+             - ImagePullBackOff: Image doesn't exist
+             - CrashLoopBackOff: MongoDB failing to start
+             - Pending: Insufficient resources (CPU/memory)
+             - OOMKilled: Memory limit too low
+          
+          4. Check logs:
+             kubectl logs {{ $labels.pod }} -n taskmaster-dev --tail=100
+          
+          5. If CrashLoopBackOff:
+             - Check MongoDB logs for errors
+             - Check persistent volume (PVC) is bound
+             - Check storage available
+          
+          6. If OOMKilled:
+             kubectl set resources deployment/mongodb --limits=memory=1Gi -n taskmaster-dev
+          
+          7. Manual restart (if needed):
+             kubectl delete pod {{ $labels.pod }} -n taskmaster-dev
+        
+        runbook_url: "https://github.com/your-org/runbooks/mongodb-down"
+    
+    # Alert 6b: MongoDB endpoint not available (network/service issue)
+    - alert: MongoDBEndpointDown
+      expr: |
+        up{job="mongodb", namespace="taskmaster-dev"} == 0
+      
+      # Explanation:
+      # - up: Prometheus built-in metric
+      # - Value is 1 if scrape target is reachable, 0 if unreachable
+      # - == 0: Target is down
+      #
+      # What does "unreachable" mean?
+      # - Prometheus tried to scrape http://mongodb-service:9216/metrics
+      # - Request failed (connection refused, timeout, DNS error, etc.)
+      #
+      # Causes:
+      # - Pod is down (no endpoint)
+      # - Service misconfigured (wrong port, wrong selector)
+      # - Network policy blocking traffic
+      # - MongoDB exporter not running
+      #
+      # Note: This is MORE specific than pod down
+      # - Pod can be Running but exporter crashed (this would catch it)
+      # - Pod can be Running but port wrong (this would catch it)
+      
+      for: 1m
+      labels:
+        severity: critical
+        team: platform
+        component: database
+        namespace: taskmaster-dev
+      annotations:
+        summary: "Cannot reach MongoDB metrics endpoint"
+        description: |
+          Prometheus cannot scrape MongoDB metrics. This indicates:
+          - MongoDB pod is down
+          - MongoDB service is misconfigured
+          - Network connectivity issues
+          - MongoDB exporter (if separate) not running
+          
+          Check:
+          1. Is pod running?
+             kubectl get pods -n taskmaster-dev -l app=mongodb
+          
+          2. Does service have endpoints?
+             kubectl get endpoints mongodb-service -n taskmaster-dev
+          
+          3. Can we reach MongoDB from another pod?
+             kubectl run -it --rm debug --image=busybox --restart=Never -- \
+               nc -zv mongodb-service.taskmaster-dev.svc.cluster.local 27017
+          
+          4. Check service selector:
+             kubectl describe svc mongodb-service -n taskmaster-dev
+    
+    # Alert 6c: Backend cannot connect to MongoDB (application-level)
+    - alert: BackendMongoDBConnectionFailed
+      expr: |
+        mongodb_up{namespace="taskmaster-dev"} == 0
+        or
+        absent(mongodb_up{namespace="taskmaster-dev"})
+      
+      # Explanation:
+      # First condition: mongodb_up == 0
+      # - This metric comes from MongoDB exporter or custom app metric
+      # - mongodb_up = 1 if connected, 0 if disconnected
+      #
+      # Second condition: absent(mongodb_up)
+      # - absent() returns 1 if metric doesn't exist
+      # - If backend never connected, metric won't exist yet
+      # - This catches cold-start failures
+      #
+      # or operator:
+      # - Alert if EITHER condition is true
+      # - Handles both "was connected, now isn't" and "never connected"
+      
+      for: 2m
+      labels:
+        severity: critical
+        team: backend
+        component: database
+        namespace: taskmaster-dev
+      annotations:
+        summary: "Backend cannot connect to MongoDB"
+        description: |
+          Backend application cannot establish connection to MongoDB.
+          
+          This is different from MongoDB being down - MongoDB might be running,
+          but backend cannot reach it or authenticate.
+          
+          Possible causes:
+          
+          1. Authentication failure:
+             - Wrong username/password in secret
+             - MongoDB user doesn't exist
+             - Check: kubectl get secret mongodb-secret -n taskmaster-dev -o yaml
+          
+          2. Network issues:
+             - Service name wrong in connection string
+             - Backend in different namespace (needs FQDN)
+             - Network policy blocking connection
+          
+          3. MongoDB not ready:
+             - Pod is Running but MongoDB still initializing
+             - Check: kubectl exec -it <mongodb-pod> -n taskmaster-dev -- mongosh --eval "db.adminCommand('ping')"
+          
+          4. Connection string wrong:
+             - Check MONGO_URI environment variable
+             - kubectl describe pod <backend-pod> -n taskmaster-dev | grep MONGO_URI
+          
+          5. Connection pool exhausted:
+             - Too many open connections
+             - Check MongoDB connection limits
+          
+          Debug steps:
+          1. Check backend logs:
+             kubectl logs -n taskmaster-dev -l app=backend | grep -i mongo
+          
+          2. Test connection from backend pod:
+             kubectl exec -it <backend-pod> -n taskmaster-dev -- \
+               nc -zv mongodb-service 27017
+          
+          3. Check DNS resolution:
+             kubectl exec -it <backend-pod> -n taskmaster-dev -- \
+               nslookup mongodb-service.taskmaster-dev.svc.cluster.local
+    
+    # Alert 6d: MongoDB connection pool exhausted
+    - alert: MongoDBConnectionPoolExhausted
+      expr: |
+        mongodb_connections{state="current"} / mongodb_connections{state="available"} > 0.9
+      
+      # Explanation:
+      # - mongodb_connections{state="current"}: Active connections right now
+      # - mongodb_connections{state="available"}: Max connections allowed
+      # - Ratio > 0.9: Using 90%+ of connection pool
+      #
+      # Example:
+      # - Max connections: 1000
+      # - Current: 950
+      # - Ratio: 950/1000 = 0.95 (95%) → Alert fires!
+      #
+      # Why this matters:
+      # - MongoDB has connection limit (default: depends on version, ~1000-5000)
+      # - If pool exhausted, new connections are rejected
+      # - Backend gets "MongoError: too many connections" errors
+      # - Users see 500 errors
+      #
+      # Causes:
+      # - Connection leak (not closing connections)
+      # - Sudden traffic spike
+      # - Too many backend replicas
+      # - Connection pool size misconfigured
+      
+      for: 5m
+      labels:
+        severity: warning
+        team: backend
+        component: database
+        namespace: taskmaster-dev
+      annotations:
+        summary: "MongoDB connection pool is nearly exhausted"
+        description: |
+          MongoDB is using {{ $value | humanizePercentage }} of available connections.
+          
+          
+          Connection pool usage is critically high. If this reaches 100%, new connection attempts will fail!
+          
+          Investigation:
+          1. Check for connection leaks:
+             - Are connections being closed properly?
+             - Look for unclosed cursors
+          
+          2. Check traffic volume:
+             - Is this expected load?
+             - Scale backend if legitimate traffic
+          
+          3. Review connection pool settings:
+             - Backend: maxPoolSize in MongoDB client
+             - MongoDB: maxIncomingConnections in config
+          
+          4. Short-term fix:
+             - Increase MongoDB connection limit:
+               kubectl exec -it <mongodb-pod> -n taskmaster-dev -- \
+                 mongosh --eval "db.adminCommand({setParameter: 1, maxIncomingConnections: 2000})"
+          
+          5. Long-term fix:
+             - Fix connection leaks in code
+             - Implement connection pooling best practices
+             - Use connection pool monitoring
+    
+    # Alert 6e: MongoDB disk usage high
+    - alert: MongoDBDiskUsageHigh
+      expr: |
+        (
+          sum(container_fs_usage_bytes{namespace="taskmaster-dev", pod=~"mongodb.*"})
+          /
+          sum(container_fs_limit_bytes{namespace="taskmaster-dev", pod=~"mongodb.*"})
+        ) * 100 > 85
+      
+      # Explanation:
+      # - container_fs_usage_bytes: Disk space used (bytes)
+      # - container_fs_limit_bytes: Disk space available (bytes)
+      # - Ratio * 100: Percentage used
+      # - > 85: Alert at 85% full
+      #
+      # Why 85%?
+      # - Leaves 15% buffer
+      # - MongoDB writes can spike (logs, indexes)
+      # - If disk fills to 100%, MongoDB crashes!
+      #
+      # What happens at 100% disk:
+      # - MongoDB cannot write new data
+      # - Replication fails
+      # - Oplog (replication log) cannot grow
+      # - Database corruption risk
+      
+      for: 5m
+      labels:
+        severity: warning
+        team: platform
+        component: database
+        namespace: taskmaster-dev
+      annotations:
+        summary: "MongoDB disk usage is high: {{ $value }}%"
+        description: |
+          MongoDB persistent volume is {{ $value | humanizePercentage }} full.
+          
+          At 100%, MongoDB will crash and data writes will fail!
+          
+          IMMEDIATE ACTIONS:
+          
+          1. Check disk usage:
+             kubectl exec -it <mongodb-pod> -n taskmaster-dev -- df -h
+          
+          2. Find large files:
+             kubectl exec -it <mongodb-pod> -n taskmaster-dev -- \
+               du -sh /data/db/* | sort -h | tail -10
+          
+          3. Check log file size:
+             kubectl exec -it <mongodb-pod> -n taskmaster-dev -- \
+               ls -lh /data/db/*.log
+          
+          4. Immediate mitigation:
+             - Compact database:
+               mongosh --eval "db.runCommand({compact: 'collection_name'})"
+             
+             - Rotate logs:
+               mongosh --eval "db.adminCommand({logRotate: 1})"
+          
+          5. Long-term solution:
+             - Increase PVC size:
+               kubectl patch pvc mongodb-data -n taskmaster-dev \
+                 -p '{"spec":{"resources":{"requests":{"storage":"20Gi"}}}}'
+             
+             - Set up automated cleanup:
+               * Old documents
+               * Expired sessions
+               * Unused indexes
+          
+          6. Enable monitoring:
+             - Set up alerts at 70%, 85%, 95%
+             - Track growth rate
+             - Forecast when disk will fill
+

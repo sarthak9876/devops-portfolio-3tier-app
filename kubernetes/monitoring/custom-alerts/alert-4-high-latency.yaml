@@ -1,0 +1,244 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: taskmaster-latency-alerts
+  namespace: monitoring
+  labels:
+    prometheus: kube-prometheus      # Prometheus Operator selector
+    role: alert-rules
+spec:
+  groups:
+  - name: taskmaster.latency.rules
+    interval: 30s                    # Evaluate every 30 seconds
+    rules:
+    
+    # Alert 4a: Average latency high (simple metric)
+    - alert: APIAverageLatencyHigh
+      expr: |
+        # Step 1: Calculate per-second rate of total duration
+        rate(http_request_duration_seconds_sum{namespace="taskmaster-dev", job="backend"}[5m])
+        /
+        # Step 2: Divide by per-second rate of request count
+        rate(http_request_duration_seconds_count{namespace="taskmaster-dev", job="backend"}[5m])
+        > 1
+      
+      # Let me break down this PromQL:
+      # 
+      # http_request_duration_seconds_sum = cumulative sum of all request durations
+      # http_request_duration_seconds_count = cumulative count of all requests
+      #
+      # rate(sum[5m]) = "How many seconds of request time accumulated per second in last 5 min"
+      # rate(count[5m]) = "How many requests per second in last 5 min"
+      #
+      # rate(sum) / rate(count) = average duration per request
+      #
+      # Example:
+      # rate(sum[5m]) = 50 seconds/second (50 seconds of request time accumulated per second)
+      # rate(count[5m]) = 100 requests/second
+      # Average = 50 / 100 = 0.5 seconds per request
+      #
+      # > 1 = Alert if average latency exceeds 1 second
+      
+      for: 5m                          # Must persist for 5 minutes
+      labels:
+        severity: warning
+        team: backend
+        component: api
+        namespace: taskmaster-dev
+      annotations:
+        summary: "Backend API average latency is high"
+        description: |
+          Average API response time is {{ $value | humanizeDuration }} (threshold: 1s).
+          
+          This indicates slow request processing across the board.
+          
+          Common causes:
+          - Slow database queries (missing indexes, N+1 queries)
+          - External API calls with high latency
+          - CPU throttling (check CPU usage alerts)
+          - Memory pressure (garbage collection pauses)
+          - Network latency
+          
+          Investigation steps:
+          1. Check database query performance:
+             kubectl exec -it <backend-pod> -n taskmaster-dev -- npm run db:explain
+          
+          2. Profile slow endpoints:
+             kubectl logs -n taskmaster-dev <backend-pod> | grep "duration>" | sort -k3 -n | tail -20
+          
+          3. Check for external API timeouts:
+             kubectl logs -n taskmaster-dev <backend-pod> | grep -i "timeout\|ETIMEDOUT"
+          
+          4. View latency breakdown in Grafana:
+             http://grafana/d/api-latency-breakdown
+          
+          5. Check concurrent requests:
+             Are we handling more traffic than usual?
+        
+        dashboard_url: "http://grafana.monitoring.svc:3000/d/api-performance"
+        runbook_url: "https://github.com/your-org/runbooks/high-latency"
+    
+    # Alert 4b: P95 latency high (percentile-based, more accurate)
+    - alert: APIP95LatencyHigh
+      expr: |
+        # Calculate 95th percentile latency from histogram buckets
+        histogram_quantile(
+          0.95,
+          sum(rate(http_request_duration_seconds_bucket{namespace="taskmaster-dev", job="backend"}[5m])) by (le, method, endpoint)
+        ) > 2
+      
+      # Let me explain histogram_quantile step-by-step:
+      #
+      # 1. rate(http_request_duration_seconds_bucket[5m])
+      #    - Gets per-second rate of requests in each bucket
+      #    - Example output:
+      #      {le="0.1"} = 10 req/s   (10 requests/sec under 0.1s)
+      #      {le="0.5"} = 25 req/s   (25 requests/sec under 0.5s)
+      #      {le="1"}   = 40 req/s   (40 requests/sec under 1s)
+      #      {le="2"}   = 45 req/s   (45 requests/sec under 2s)
+      #      {le="5"}   = 50 req/s   (50 requests/sec under 5s)
+      #
+      # 2. sum(...) by (le, method, endpoint)
+      #    - Aggregates across pods (if multiple replicas)
+      #    - Groups by bucket (le), HTTP method (GET/POST), and endpoint (/api/tasks)
+      #
+      # 3. histogram_quantile(0.95, ...)
+      #    - Calculates: "What's the latency where 95% of requests complete?"
+      #    - Uses linear interpolation between buckets
+      #    - Example: If 95% falls between 1s and 2s buckets,
+      #      it might return 1.8 seconds
+      #
+      # 4. > 2
+      #    - Alert if p95 latency exceeds 2 seconds
+      #    - This means: "5% of users wait more than 2 seconds"
+      
+      for: 5m
+      labels:
+        severity: critical
+        team: backend
+        component: api
+        namespace: taskmaster-dev
+      annotations:
+        summary: "Backend API P95 latency is critically high"
+        description: |
+          🚨 CRITICAL: 95th percentile API latency is {{ $value | humanizeDuration }} (threshold: 2s).
+          
+          This means 5% of users are experiencing response times above 2 seconds!
+          
+          Impact:
+          - Poor user experience
+          - Potential timeouts (if frontend timeout is 3s)
+          - Cart abandonment / user churn
+          - SEO impact (Google penalizes slow sites)
+          
+          IMMEDIATE ACTIONS:
+          
+          1. Identify slowest endpoints:
+             kubectl logs -n taskmaster-dev -l app=backend --tail=1000 \
+               | jq 'select(.duration > 2000) | {endpoint: .path, duration: .duration, timestamp: .timestamp}' \
+               | sort -k duration
+          
+          2. Check database:
+             - Are queries slow? (check slow query log)
+             - Are connections pooled? (check connection count)
+             - Missing indexes? (run EXPLAIN on slow queries)
+          
+          3. Check external dependencies:
+             - Third-party APIs responding slowly?
+             - Network issues?
+          
+          4. Mitigation:
+             - Add caching (Redis) for frequent queries
+             - Scale horizontally (more pods = distributed load)
+             - Add database read replicas
+             - Implement request queuing / rate limiting
+          
+          5. Long-term:
+             - Profile application code (find hotspots)
+             - Optimize database queries
+             - Add CDN for static assets
+             - Implement async processing for slow operations
+        
+        grafana_query: |
+          histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, endpoint))
+    
+    # Alert 4c: Latency spike (sudden increase)
+    - alert: APILatencySpike
+      expr: |
+        # Compare current p95 to 1 hour ago
+        (
+          histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{namespace="taskmaster-dev"}[5m])) by (le))
+          /
+          histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{namespace="taskmaster-dev"}[5m] offset 1h)) by (le))
+        ) > 2
+      
+      # Explanation:
+      # - offset 1h = "metrics from 1 hour ago"
+      # - This compares current p95 to p95 from 1 hour ago
+      # - > 2 = latency doubled (2x increase)
+      #
+      # Example:
+      # - 1 hour ago: p95 = 200ms
+      # - Now: p95 = 500ms
+      # - Ratio: 500 / 200 = 2.5 (250% increase) → Alert fires!
+      #
+      # Why this is useful:
+      # - Catches anomalies (sudden degradation)
+      # - Even if absolute latency is acceptable, sudden spikes indicate problems
+      # - Example: Normal p95 is 100ms, suddenly jumps to 300ms (3x)
+      #   This is alarming even though 300ms is "acceptable"
+      
+      for: 3m
+      labels:
+        severity: warning
+        team: backend
+        component: api
+        namespace: taskmaster-dev
+      annotations:
+        summary: "API latency suddenly increased"
+        description: |
+          API latency has increased by {{ $value | humanizePercentage }} compared to 1 hour ago.
+          
+          Current p95 latency vs 1 hour ago shows {{ $value }}x increase.
+          
+          This sudden spike indicates:
+          - Recent deployment introduced regression
+          - Traffic pattern changed (more expensive operations)
+          - Database or dependency degradation
+          - Resource contention (CPU/memory)
+          
+          Check recent changes:
+          1. kubectl rollout history deployment/backend -n taskmaster-dev
+          2. Recent deployments correlate with latency increase?
+          3. If yes: kubectl rollout undo deployment/backend -n taskmaster-dev
+    
+    # Alert 4d: Slow endpoint detection (per-endpoint alerting)
+    - alert: SlowEndpoint
+      expr: |
+        histogram_quantile(
+          0.95,
+          sum(rate(http_request_duration_seconds_bucket{namespace="taskmaster-dev"}[5m])) by (le, endpoint)
+        ) > 3
+      
+      for: 5m
+      labels:
+        severity: warning
+        team: backend
+        component: api
+        namespace: taskmaster-dev
+      annotations:
+        summary: "Endpoint {{ $labels.endpoint }} is slow"
+        description: |
+          Endpoint {{ $labels.endpoint }} has p95 latency of {{ $value | humanizeDuration }}.
+          
+          This specific endpoint is slower than others.
+          
+          Targeted investigation:
+          1. Review code for {{ $labels.endpoint }}
+          2. Check database queries in this endpoint
+          3. Check if endpoint does expensive operations (file I/O, external APIs)
+          4. Consider:
+             - Caching response
+             - Async processing
+             - Pagination (if returning large datasets)
+             - Splitting into multiple smaller endpoints

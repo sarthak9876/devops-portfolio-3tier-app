@@ -1,0 +1,142 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: taskmaster-memory-alerts
+  namespace: monitoring
+  labels:
+    prometheus: kube-prometheus
+    role: alert-rules
+spec:
+  groups:
+  - name: taskmaster.memory.rules
+    interval: 30s
+    rules:
+
+    # Alert 3a: Pod memory usage warning
+    - alert: PodMemoryUsageHigh
+      expr: |
+        (
+          sum(container_memory_working_set_bytes{namespace="taskmaster-dev", pod!="", container!=""}) by (pod, container)
+          /
+          sum(containr_spec_memory_limit_bytes{namespace="taskmaster-dev", pod!="", container!=""}) by (pod, container)
+          ) * 100 > 80
+      for: 5m
+      labels:
+        severity: warning
+        team: backend
+        component: resources
+        namespace: taskmatser-dev
+      annotations:
+        summary: "Pod {{ $labels.pod }} memory usage is high"
+        description: |
+          Pod {{ $labels.pod }} container {{ $labels.container }} is using {{ $value | humanize }}% of its memory limit.
+          
+          Current memory usage is approaching the limit. If memory continues to grow, the pod will be OOMKilled.
+          
+          Investigation:
+          1. Check memory usage: kubectl top pod {{ $labels.pod }} -n {{ $labels.namespace }}
+          2. Check for memory leaks: Monitor memory trend in Grafana
+          3. Analyze heap dumps (if applicable for language)
+          
+          Preventive actions:
+          - Review recent code changes for memory leaks
+          - Check if caches are bounded
+          - Verify database connections are closed
+          - Look for large file operations
+        dashboard_url: "http://grafana.monitoring.svc:3000/d/pod-resources"
+    
+    # Alert 3b: Pod memory usage critical (imminent OOMKill)
+    - alert: PodMemoryusageCritical
+      expr: |
+        (
+        sum(container_memory_working_set_bytes{namepsace="taskmaster-dev", pod!="", container!=""}) by (pod, container)
+        /
+        sum(container_spec_memory_limit_bytes{namespace="taskmaster-dev", pod!="", container!=""}) by (pod, container)
+        ) * 100 > 95
+      for: 2m
+      labels:
+        severity: critical
+        team: backend
+        component: resources
+        namespace: taskmatser-dev
+      annotations:
+        summary: "Pod {{ $labels.pod }} is at risk of OOMKill"
+        description: |
+          🚨 CRITICAL: Pod {{ $labels.pod }} container {{ $labels.container }} is using {{ $value | humanize }}% of memory limit.
+          
+          Pod will be OOMKilled very soon if memory continues to grow!
+          
+          IMMEDIATE ACTIONS:
+          1. Increase memory limit temporarily:
+             kubectl set resources deployment/<name> -c {{ $labels.container }} --limits=memory=1Gi -n {{ $labels.namespace }}
+          
+          2. Restart pod to clear memory:
+             kubectl delete pod {{ $labels.pod }} -n {{ $labels.namespace }}
+          
+          3. Scale horizontally to distribute load:
+             kubectl scale deployment/<name> --replicas=<current+2> -n {{ $labels.namespace }}
+          
+          POST-INCIDENT:
+          - Profile memory usage
+          - Fix memory leaks
+          - Right-size memory limits based on actual usage
+        runbook_url: "https://github.com/your-org/runbooks/oom-kill"
+    
+    # Alert 3c: Pod OOMKilled (after the fact)
+    - alert: PodOOMKilled
+      expr: |
+        kube_pod_container_status_last_terminated_status{namespace="taskmaster-dev", reason="OOMKIlled"} ==1
+      for: 1m
+      labels:
+        severity: critical
+        team: backend
+        component: resources
+        namespace: taskmaster-dev
+      annotations:
+        summary: "Pod {{ $labels.pod }} was OOMKilled"
+        description: |
+          Pod {{ $labels.pod }} container {{ $labels.container }} was killed due to out-of-memory.
+          
+          This means the container exceeded its memory limit and was forcefully terminated.
+          
+          Root cause investigation:
+          1. Check memory limit: kubectl get pod {{ $labels.pod }} -n {{ $labels.namespace }} -o jsonpath='{.spec.containers[*].resources.limits.memory}'
+          2. Check actual usage before OOM: Review Grafana memory trends
+          3. Check logs before crash: kubectl logs {{ $labels.pod }} -n {{ $labels.namespace }} --previous
+          
+          Resolution:
+          - If legitimate growth: Increase memory limits
+          - If memory leak: Fix application code
+          - If traffic spike: Add more replicas to distribute load
+        dashboard_url: "http://grafana.monitoring.svc:3000/d/pod-resources"
+    
+    # Alert 3d: Node memory pressure
+    - alert: NodeMemoryPressure
+      expr: |
+        kube_node_status_condition{condition="MemoryPressure", status="true"} == 1
+      for: 2m
+      labels:
+        severity: critical
+        team: platform
+        component: infrastructure
+
+      annotations:
+        summary: "Node {{ $labels.node }} is under memory pressure"
+        description: |
+          Node {{ $labels.node }} is experiencing memory pressure.
+          
+          Kubernetes will start evicting pods to free up memory!
+          
+          Impact:
+          - Pods may be evicted (especially low-priority pods)
+          - New pods cannot be scheduled on this node
+          - Potential service disruption
+          
+          Actions:
+          1. Check node memory: kubectl describe node {{ $labels.node }}
+          2. Identify memory-hungry pods: kubectl top pods --all-namespaces --sort-by=memory | grep {{ $labels.node }}
+          3. Consider:
+             - Scaling cluster (add nodes)
+             - Lowering memory requests/limits
+             - Evicting non-critical workloads
+
