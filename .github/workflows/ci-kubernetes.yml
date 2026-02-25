@@ -1,0 +1,44 @@
+name: CI Kubernetes Manifests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'kubernetes/manifests/**'
+      - '.github/workflows/ci-kubernetes.yml'
+
+
+  pull_request:
+    branches: [main]
+    paths:
+      - 'kubernetes/manifests/**'
+      - '.github/workflows/ci-kubernetes.yml'
+
+
+jobs:
+  validate-k8s:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          varsion: latest
+
+      - name: Basic YAML check
+        run: |
+          echo "Checking Kubernetes YAML syntax..."
+          find kubernetes/manifests -name '*.yaml' -o -name '*.yml' | while read file; do
+            echo "Validating $file"
+            python -c "import yaml,sys; yaml.safe_load(open('$file'))" || exit 1
+          done
+
+      - name: Client-side apply dry-run
+        run: |
+          echo "Running kubectl apply --dry-run=client on manifests..."
+          kubectl apply --dry-run=client -f kubernetes/manifests
+
+
