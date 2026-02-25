@@ -1,0 +1,143 @@
+{
+  "dashboard": {
+    "title": "TaskMaster - Application Overview",
+    "tags": ["taskmaster", "application"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 0,
+    "refresh": "30s",
+    
+    "panels": [
+      {
+        "id": 1,
+        "title": "Pod Status",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+        "targets": [{
+          "expr": "count(kube_pod_info{namespace=\"taskmaster-dev\"}) by (pod)",
+          "legendFormat": "Total Pods",
+          "refId": "A"
+        }],
+        "options": {
+          "graphMode": "none",
+          "colorMode": "value",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "green"},
+                {"value": 80, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      
+      {
+        "id": 2,
+        "title": "Pod Restarts (24h)",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+        "targets": [{
+          "expr": "sum(increase(kube_pod_container_status_restarts_total{namespace=\"taskmaster-dev\"}[24h]))",
+          "legendFormat": "Restarts",
+          "refId": "A"
+        }],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "green"},
+                {"value": 5, "color": "yellow"},
+                {"value": 10, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      
+      {
+        "id": 3,
+        "title": "CPU Usage by Pod",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+        "targets": [{
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"taskmaster-dev\", pod!=\"\", container!=\"\"}[5m])) by (pod) * 100",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10
+            }
+          }
+        }
+      },
+      
+      {
+        "id": 4,
+        "title": "Memory Usage by Pod",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+        "targets": [{
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"taskmaster-dev\", pod!=\"\", container!=\"\"}) by (pod) / 1024 / 1024",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "MiB",
+            "min": 0,
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 10
+            }
+          }
+        }
+      },
+      
+      {
+        "id": 5,
+        "title": "Firing Alerts",
+        "type": "table",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12},
+        "targets": [{
+          "expr": "ALERTS{namespace=\"taskmaster-dev\", alertstate=\"firing\"}",
+          "format": "table",
+          "instant": true,
+          "refId": "A"
+        }],
+        "transformations": [{
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value": true,
+              "__name__": true
+            },
+            "indexByName": {},
+            "renameByName": {
+              "alertname": "Alert",
+              "severity": "Severity",
+              "pod": "Pod",
+              "container": "Container"
+            }
+          }
+        }]
+      }
+    ]
+  }
+}

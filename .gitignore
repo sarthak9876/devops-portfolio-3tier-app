@@ -216,3 +216,6 @@ coverage/
 
 kubernetes/manifests/02-secrets.yml
 02-secrets.yml
+values-monitoring.yaml
+values-monitoring.yaml
+values-monitoring.yml

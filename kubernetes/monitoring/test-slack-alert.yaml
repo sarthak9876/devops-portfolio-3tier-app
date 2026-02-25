@@ -1,0 +1,27 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: slack-test-alert
+  namespace: monitoring
+  labels:
+    prometheus: kube-prometheus
+    role: alert-rules
+spec:
+  groups:
+  - name: slack.test
+    interval: 30s
+    rules:
+    - alert: SlackIntegrationTest
+      expr: vector(1)  # Always true
+      for: 1m
+      labels:
+        severity: warning
+        team: platform
+        namespace: monitoring
+      annotations:
+        summary: "Slack integration test alert"
+        description: |
+          This is a test alert to verify Slack integration is working.
+          If you see this in Slack, the integration is successful!
+          
+          You can delete this PrometheusRule after testing.

@@ -1,0 +1,87 @@
+global:
+  resolve_timeout: 5m
+
+# IMPORTANT: Reference the secret file
+route:
+  group_by: ['alertname', 'namespace', 'severity']
+  group_wait: 10s
+  group_interval: 5m
+  repeat_interval: 12h
+  receiver: 'slack-notifications'
+  
+  routes:
+  - match:
+      severity: critical
+    receiver: 'slack-critical'
+    continue: false
+  
+  - match:
+      severity: warning
+    receiver: 'slack-warnings'
+    continue: false
+
+receivers:
+- name: 'slack-notifications'
+  slack_configs:
+  - api_url_file: '/etc/alertmanager/secrets/alertmanager-slack-webhook/url'
+    channel: '#devops-alerts'
+    title: '{{ .GroupLabels.alertname }}'
+    text: |
+      *Summary:* {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}
+      
+      *Description:* {{ range .Alerts }}{{ .Annotations.description }}{{ end }}
+      
+      *Details:*
+      {{ range .Alerts }}
+      • Namespace: {{ .Labels.namespace }}
+      • Pod: {{ .Labels.pod }}
+      • Severity: {{ .Labels.severity }}
+      {{ end }}
+      
+      *Status:* {{ if eq .Status "firing" }}🚨 FIRING{{ else }}✅ RESOLVED{{ end }}
+    
+    send_resolved: true
+
+- name: 'slack-critical'
+  slack_configs:
+  - api_url_file: '/etc/alertmanager/secrets/alertmanager-slack-webhook/url'
+    channel: '#devops-alerts'
+    title: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
+    text: |
+      *CRITICAL ALERT*
+      
+      {{ range .Alerts }}
+      *Summary:* {{ .Annotations.summary }}
+      
+      *Description:* {{ .Annotations.description }}
+      
+      *Details:*
+      • Namespace: {{ .Labels.namespace }}
+      • Pod: {{ .Labels.pod }}
+      • Container: {{ .Labels.container }}
+      • Severity: {{ .Labels.severity }}
+      • Team: {{ .Labels.team }}
+      
+      {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+      {{ if .Annotations.dashboard_url }}*Dashboard:* {{ .Annotations.dashboard_url }}{{ end }}
+      
+      *Status:* {{ if eq .Status "firing" }}🔴 FIRING{{ else }}✅ RESOLVED{{ end }}
+      *Active Since:* {{ .StartsAt }}
+      {{ end }}
+    
+    send_resolved: true
+
+- name: 'slack-warnings'
+  slack_configs:
+  - api_url_file: '/etc/alertmanager/secrets/alertmanager-slack-webhook/url'
+    channel: '#devops-alerts'
+    title: '⚠️ WARNING: {{ .GroupLabels.alertname }}'
+    text: |
+      {{ range .Alerts }}
+      *Summary:* {{ .Annotations.summary }}
+      *Description:* {{ .Annotations.description }}
+      *Namespace:* {{ .Labels.namespace }}
+      *Pod:* {{ .Labels.pod }}
+      {{ end }}
+    
+    send_resolved: true

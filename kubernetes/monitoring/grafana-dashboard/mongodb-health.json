@@ -1,0 +1,125 @@
+{
+  "dashboard": {
+    "title": "TaskMaster - MongoDB Health",
+    "tags": ["taskmaster", "mongodb", "database"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 0,
+    "refresh": "30s",
+    
+    "panels": [
+      {
+        "id": 1,
+        "title": "MongoDB Pod Status",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+        "targets": [{
+          "expr": "kube_pod_status_phase{namespace=\"taskmaster-dev\", pod=~\"mongodb.*\", phase=\"Running\"}",
+          "refId": "A"
+        }],
+        "options": {
+          "graphMode": "none",
+          "colorMode": "background"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {"type": "value", "options": {"0": {"text": "DOWN", "color": "red"}}},
+              {"type": "value", "options": {"1": {"text": "RUNNING", "color": "green"}}}
+            ]
+          }
+        }
+      },
+      
+      {
+        "id": 2,
+        "title": "MongoDB Disk Usage",
+        "type": "gauge",
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+        "targets": [{
+          "expr": "(sum(container_fs_usage_bytes{namespace=\"taskmaster-dev\", pod=~\"mongodb.*\"}) / sum(container_fs_limit_bytes{namespace=\"taskmaster-dev\", pod=~\"mongodb.*\"})) * 100",
+          "refId": "A"
+        }],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "green"},
+                {"value": 70, "color": "yellow"},
+                {"value": 85, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      
+      {
+        "id": 3,
+        "title": "MongoDB CPU Usage",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+        "targets": [{
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"taskmaster-dev\", pod=~\"mongodb.*\", container!=\"\"}[5m])) * 100",
+          "legendFormat": "CPU Usage",
+          "refId": "A"
+        }],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        }
+      },
+      
+      {
+        "id": 4,
+        "title": "MongoDB Memory Usage",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+        "targets": [{
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"taskmaster-dev\", pod=~\"mongodb.*\", container!=\"\"}) / 1024 / 1024",
+          "legendFormat": "Memory Usage (MiB)",
+          "refId": "A"
+        }],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "MiB",
+            "min": 0
+          }
+        }
+      },
+      
+      {
+        "id": 5,
+        "title": "MongoDB Restart Count",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+        "targets": [{
+          "expr": "sum(kube_pod_container_status_restarts_total{namespace=\"taskmaster-dev\", pod=~\"mongodb.*\"})",
+          "refId": "A"
+        }],
+        "options": {
+          "graphMode": "area"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "green"},
+                {"value": 1, "color": "yellow"},
+                {"value": 3, "color": "red"}
+              ]
+            }
+          }
+        }
+      }
+    ]
+  }
+}
+
