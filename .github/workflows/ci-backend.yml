@@ -6,7 +6,7 @@ on:
     paths:
        - 'application/backend/**'
        - '.github/workflows/ci-backend.yml'
-  pull_requests:
+  pull_request:
     branches: [main]
     paths:
       - 'application/backend/**'
@@ -28,7 +28,7 @@ jobs:
 
 
       - name: Install dependencies
-        working_directory: application/backend
+        working-directory: application/backend
         run: npm ci
 
       - name: Lint
