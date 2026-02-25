@@ -28,20 +28,25 @@ jobs:
         with:
           varsion: latest
 
+      - name: Install PyYAML
+        run: |
+          python -m pip install --user pyyaml
+
       - name: Basic YAML check
         run: |
           echo "Checking Kubernetes YAML syntax..."
           find kubernetes/manifests -name '*.yaml' -o -name '*.yml' | while read file; do
             echo "Validating $file"
             FILE="$file" python - << 'PYCODE'
-            import os, yaml, sys
+import os
+import yaml
 
-            file_path = os.environ["FILE"]
-            with open(file_path, "r") as f:
-            # Parse all documents; will raise if any doc is invalid
-            for _ in yaml.safe_load_all(f):
-              pass
-                PYCODE
+file_path = os.environ["FILE"]
+with open(file_path, "r") as f:
+    # Parse all YAML documents in the file; will raise if any doc is invalid
+    for _ in yaml.safe_load_all(f):
+        pass
+PYCODE
           done
 
       - name: Client-side apply dry-run
