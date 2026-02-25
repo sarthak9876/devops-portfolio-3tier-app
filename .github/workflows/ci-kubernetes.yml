@@ -7,45 +7,53 @@ on:
       - 'kubernetes/manifests/**'
       - '.github/workflows/ci-kubernetes.yml'
 
-
   pull_request:
     branches: [main]
     paths:
       - 'kubernetes/manifests/**'
       - '.github/workflows/ci-kubernetes.yml'
 
-
 jobs:
   validate-k8s:
     runs-on: ubuntu-latest
-    steps:
 
+    steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Install kubectl
         uses: azure/setup-kubectl@v4
         with:
-          varsion: latest
+          version: latest
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
 
       - name: Install PyYAML
         run: |
-          python -m pip install --user pyyaml
+          python -m pip install --upgrade pip
+          pip install pyyaml
 
       - name: Basic YAML check
         run: |
+          set -e
           echo "Checking Kubernetes YAML syntax..."
-          find kubernetes/manifests -name '*.yaml' -o -name '*.yml' | while read file; do
+
+          find kubernetes/manifests -type f \( -name "*.yaml" -o -name "*.yml" \) | while read file; do
             echo "Validating $file"
             FILE="$file" python - << 'PYCODE'
 import os
 import yaml
 
 file_path = os.environ["FILE"]
+
 with open(file_path, "r") as f:
-    # Parse all YAML documents in the file; will raise if any doc is invalid
     for _ in yaml.safe_load_all(f):
         pass
+
+print(f"{file_path} is valid YAML")
 PYCODE
           done
 
@@ -53,5 +61,3 @@ PYCODE
         run: |
           echo "Running kubectl apply --dry-run=client on manifests..."
           kubectl apply --dry-run=client -f kubernetes/manifests
-
-
