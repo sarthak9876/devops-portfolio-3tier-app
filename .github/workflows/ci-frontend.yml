@@ -40,6 +40,7 @@ jobs:
             npm run lint
           else
             echo "No lint script found. Skipping..."
+          fi
 
       - name: Test/Build
         working-directory: application/frontend

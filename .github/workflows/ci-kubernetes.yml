@@ -33,7 +33,15 @@ jobs:
           echo "Checking Kubernetes YAML syntax..."
           find kubernetes/manifests -name '*.yaml' -o -name '*.yml' | while read file; do
             echo "Validating $file"
-            python -c "import yaml,sys; yaml.safe_load(open('$file'))" || exit 1
+            FILE="$file" python - << 'PYCODE'
+            import os, yaml, sys
+
+            file_path = os.environ["FILE"]
+            with open(file_path, "r") as f:
+            # Parse all documents; will raise if any doc is invalid
+            for _ in yaml.safe_load_all(f):
+              pass
+                PYCODE
           done
 
       - name: Client-side apply dry-run
