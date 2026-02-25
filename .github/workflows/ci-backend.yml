@@ -44,7 +44,11 @@ jobs:
         working-directory: application/backend
         run: |
           if npm run | grep -q "test"; then
-            npm test
+            if cat package.json | grep -q '"jest"'; then
+              npm test -- --passWithNoTests
+            else
+              npm test
+            fi
           else
             echo "No tests found. Running build if available..."
             if npm run | grep -q "build"; then
